@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Outil de Métré Professionnel</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;600;700&display=swap');
+        
+        body { 
+            font-family: 'Comfortaa', cursive; 
+            background-color: #000000; 
+        }
+        
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        
+        .input-field {
+            @apply bg-white border border-zinc-300 rounded-lg px-3 py-1.5 text-black font-bold outline-none transition-all placeholder-zinc-400 text-sm;
+            color: #000000 !important;
+        }
+
+        .input-field:focus {
+            @apply border-amber-500 ring-2 ring-amber-500/50;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #000000; }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
+
+        /* Styles spécifiques pour le Canvas */
+        #workspace { touch-action: none; } /* Empêche le scroll tactile par défaut */
+    </style>
+</head>
+<body class="flex h-screen w-full bg-black font-sans text-zinc-300 overflow-hidden relative">
+
+    <!-- BANNIÈRE MODE GOMME -->
+    <div id="eraserBanner" class="hidden fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-900 border border-red-700 text-red-100 px-6 py-3 rounded-full shadow-2xl z-50 flex items-center space-x-4 animate-bounce">
+        <span class="font-bold">🗑️ Mode Gomme Actif</span>
+        <span class="text-sm border-l border-red-500 pl-4">Cliquez sur une forme pour l'effacer</span>
+        <button onclick="toggleEraser()" class="bg-red-100 text-red-900 text-xs font-bold px-3 py-1 rounded hover:bg-white transition-colors">Désactiver</button>
+    </div>
+
+    <!-- WIDGET ZOOM FLOTTANT -->
+    <div id="zoomWidget" class="hidden fixed top-6 right-6 z-40 flex-col gap-2">
+        <button onclick="handleButtonZoom(1.2)" class="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-amber-500 hover:border-amber-500 shadow-xl flex items-center justify-center transition-all" title="Zoom +">
+            <span class="text-sm font-bold">🔎+</span>
+        </button>
+        <button onclick="handleButtonZoom(1 / 1.2)" class="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-amber-500 hover:border-amber-500 shadow-xl flex items-center justify-center transition-all" title="Zoom -">
+            <span class="text-sm font-bold">🔎-</span>
+        </button>
+        <button id="btn-fullscreen" onclick="toggleFullScreen()" class="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-amber-500 hover:border-amber-500 shadow-xl flex items-center justify-center transition-all mt-2" title="Plein écran">
+            <span id="icon-fullscreen" class="text-xl font-bold">⛶</span>
+        </button>
+        <button id="btn-eraser" onclick="toggleEraser()" class="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-red-500 hover:border-red-500 shadow-xl flex items-center justify-center transition-all mt-2" title="Outil Gomme">
+            <span class="text-xl font-bold">🗑️</span>
+        </button>
+    </div>
+
+    <!-- TIROIR PRINCIPAL -->
+    <div id="drawer" class="fixed top-0 left-0 h-full w-80 bg-zinc-950 shadow-2xl flex flex-col z-30 border-r border-zinc-900 transition-transform duration-300 ease-in-out translate-x-0">
+        
+        <!-- LANGUETTES -->
+        <div id="tabsContainer" class="absolute top-20 -right-12 flex flex-col space-y-2">
+            <!-- Rendu dynamique par JS -->
+        </div>
+
+        <div class="flex-1 overflow-y-auto flex flex-col">
+            <div class="p-6 border-b border-zinc-900 bg-zinc-900/50">
+                <h1 id="drawerTitle" class="text-xl font-bold text-white">⚙️ Projet & Configuration</h1>
+            </div>
+
+            <div id="drawerContent" class="p-6 flex-1 space-y-6">
+                <!-- Rendu dynamique par JS selon l'onglet -->
+            </div>
+        </div>
+    </div>
+
+    <!-- CANVAS CENTRAL ET ZONE DE NAVIGATION -->
+    <div id="workspace" class="absolute inset-0 w-full h-full overflow-hidden bg-zinc-900 z-10">
+        
+        <!-- ÉCRAN VIDE -->
+        <div id="emptyState" class="absolute inset-0 flex items-center justify-center text-zinc-600 font-medium bg-black">
+            Importez un plan depuis SETUP pour commencer
+        </div>
+
+        <!-- LOADER -->
+        <div id="loader" class="hidden absolute inset-0 flex-col items-center justify-center bg-black/80 z-50 backdrop-blur-sm">
+            <div class="animate-spin text-6xl mb-4 text-amber-500">⚙️</div>
+            <div class="text-white font-bold text-xl animate-pulse">Traitement en cours...</div>
+            <div class="text-zinc-500 text-sm mt-2 text-center px-4">Cette opération peut prendre quelques secondes.</div>
+        </div>
+
+        <!-- CONTENEUR MULTI-CALQUES -->
+        <div id="canvasContainer" class="hidden relative shadow-2xl origin-top-left border border-zinc-800" style="transform: translate(0px, 0px) scale(1);">
+            <img id="bgImage" alt="Plan de fond" class="absolute top-0 left-0 w-full h-full pointer-events-none" />
+            <canvas id="drawCanvas" class="absolute top-0 left-0 w-full h-full cursor-grab"></canvas>
+        </div>
+        
+        <!-- CANVAS D'IMPRESSION (CACHÉ) -->
+        <canvas id="printCanvas" class="hidden"></canvas>
+    </div>
+
+    <!-- SCRIPT DE LOGIQUE APPLICATIVE -->
+    <script>
+        // --- 1. CONFIGURATION & ÉTATS ---
+        const COLORS = [
+            { hex: '#ef4444', emoji: '🟥' }, { hex: '#a855f7', emoji: '🟪' }, { hex: '#3b82f6', emoji: '🟦' },
+            { hex: '#22c55e', emoji: '🟩' }, { hex: '#eab308', emoji: '🟨' }, { hex: '#f97316', emoji: '🟧' }
+        ];
+
+        let state = {
+            activeTab: 'SETUP',
+            isDrawerOpen: true,
+            appState: 'UPLOAD',
+            imageSrc: null, 
+            imageObj: null, 
+            imageSize: { width: 0, height: 0 },
+            isPdf: false,
+            scaleRatioInput: '50',
+            isLoading: false,
+            pixelsPerMeter: null,
+            tools: [],
+            activeToolId: null,
+            editingTool: null, 
+            isEraserMode: false,
+            currentLine: [],
+            mousePos: { x: 0, y: 0 },
+            transform: { scale: 1, x: 0, y: 0 },
+            isPanning: false,
+            panStart: { x: 0, y: 0 }
+        };
+
+        // DOM Elements
+        const els = {
+            drawer: document.getElementById('drawer'),
+            tabsContainer: document.getElementById('tabsContainer'),
+            drawerTitle: document.getElementById('drawerTitle'),
+            drawerContent: document.getElementById('drawerContent'),
+            workspace: document.getElementById('workspace'),
+            emptyState: document.getElementById('emptyState'),
+            loader: document.getElementById('loader'),
+            canvasContainer: document.getElementById('canvasContainer'),
+            bgImage: document.getElementById('bgImage'),
+            drawCanvas: document.getElementById('drawCanvas'),
+            eraserBanner: document.getElementById('eraserBanner'),
+            zoomWidget: document.getElementById('zoomWidget'),
+            btnEraser: document.getElementById('btn-eraser'),
+            printCanvas: document.getElementById('printCanvas')
+        };
+
+        const ctx = els.drawCanvas.getContext('2d');
+
+        // --- 2. MOTEUR DE RENDU (Réactivité manuelle) ---
+        function setState(updates) {
+            Object.assign(state, updates);
+            renderDOM();
+            drawCanvas();
+        }
+
+        function renderDOM() {
+            // Loader & Empty State
+            els.loader.style.display = state.isLoading ? 'flex' : 'none';
+            els.emptyState.style.display = (!state.imageSrc && !state.isLoading) ? 'flex' : 'none';
+            
+            // Canvas Container & Image
+            if (state.imageSrc) {
+                els.canvasContainer.style.display = 'block';
+                if (els.bgImage.src !== state.imageSrc) els.bgImage.src = state.imageSrc;
+                els.canvasContainer.style.width = `${state.imageSize.width}px`;
+                els.canvasContainer.style.height = `${state.imageSize.height}px`;
+                els.drawCanvas.width = state.imageSize.width;
+                els.drawCanvas.height = state.imageSize.height;
+                els.canvasContainer.style.transform = `translate(${state.transform.x}px, ${state.transform.y}px) scale(${state.transform.scale})`;
+                
+                // Cursor
+                if (state.isPanning) els.drawCanvas.style.cursor = 'grabbing';
+                else if (state.isEraserMode) els.drawCanvas.style.cursor = 'crosshair';
+                else if (state.appState === 'MEASURE' && ['LINE', 'AREA', 'POINT'].includes(state.activeTab)) els.drawCanvas.style.cursor = 'crosshair';
+                else els.drawCanvas.style.cursor = 'grab';
+            } else {
+                els.canvasContainer.style.display = 'none';
+            }
+
+            // Eraser Banner
+            els.eraserBanner.style.display = state.isEraserMode ? 'flex' : 'none';
+            
+            // Stylisation du bouton Gomme Flottant
+            if (els.btnEraser) {
+                if (state.isEraserMode) {
+                    els.btnEraser.className = "w-12 h-12 bg-red-600 border border-red-500 rounded-xl text-white shadow-xl flex items-center justify-center transition-all mt-2 animate-pulse";
+                } else {
+                    els.btnEraser.className = "w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-red-500 hover:border-red-500 shadow-xl flex items-center justify-center transition-all mt-2";
+                }
+            }
+
+            // Zoom Widget
+            els.zoomWidget.style.display = state.imageSrc ? 'flex' : 'none';
+
+            // Drawer Transform
+            els.drawer.style.transform = state.isDrawerOpen ? 'translateX(0)' : 'translateX(-100%)';
+
+            renderTabs();
+            renderDrawerContent();
+        }
+
+        function renderTabs() {
+            const tabs = [
+                { id: 'SETUP', icon: '⚙️', title: 'Configuration' },
+                ...(state.pixelsPerMeter ? [
+                    { id: 'LINE', icon: '📏', title: 'Mètres linéaires' },
+                    { id: 'AREA', icon: '📐', title: 'Surfaces' },
+                    { id: 'POINT', icon: '🚩', title: 'Pointages' },
+                    { id: 'SUMMARY', icon: '📠', title: 'Récapitulatif' }
+                ] : [])
+            ];
+
+            els.tabsContainer.innerHTML = tabs.map(t => {
+                const isActive = state.activeTab === t.id && state.isDrawerOpen;
+                const activeClass = isActive ? 'bg-amber-600 text-white border-amber-700 hover:bg-amber-500' : 'bg-zinc-950 text-zinc-500 border-zinc-900 hover:bg-zinc-900';
+                return `<button onclick="toggleTab('${t.id}')" title="${t.title}" class="w-12 py-3 rounded-r-lg shadow-lg flex flex-col items-center justify-center transition-colors border border-l-0 ${activeClass}"><span>${t.icon}</span></button>`;
+            }).join('');
+        }
+
+        function renderDrawerContent() {
+            const titles = { SETUP: '⚙️ Projet & Configuration', LINE: '📏 Mètres linéaires', AREA: '📐 Surfaces', POINT: '🚩 Pointages', SUMMARY: '📠 Récapitulatif' };
+            els.drawerTitle.textContent = titles[state.activeTab];
+
+            let html = '';
+
+            if (state.activeTab === 'SETUP') {
+                html += `
+                <div class="p-5 rounded-2xl border ${state.appState === 'UPLOAD' ? 'border-amber-600 bg-zinc-900' : 'border-zinc-800 bg-zinc-900'}">
+                  <h2 class="font-bold text-white mb-4">1. Importer un plan</h2>
+                  ${state.imageSrc ? '<span class="text-amber-500 font-bold text-sm bg-amber-500/10 px-3 py-1.5 rounded-lg">✓ Plan chargé</span>' : `
+                    <label class="block w-full text-center py-2.5 rounded-xl font-bold text-sm transition-all ${state.isLoading ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' : 'bg-amber-600 hover:bg-amber-500 text-white cursor-pointer active:scale-95'}">
+                      ${state.isLoading ? "⏳ Chargement..." : "Importer (PDF/IMG)"}
+                      <input type="file" accept=".pdf, image/*" class="hidden" onchange="handleFileUpload(event)" ${state.isLoading ? 'disabled' : ''} />
+                    </label>
+                  `}
+                </div>`;
+
+                html += `
+                <div class="p-5 rounded-2xl border ${state.appState === 'SETUP_SCALE' ? 'border-amber-600 bg-zinc-900' : 'border-zinc-800 bg-zinc-900'}">
+                  <h2 class="font-bold text-white mb-4">2. Échelle du plan</h2>
+                  ${state.pixelsPerMeter ? `
+                    <div class="text-sm text-amber-500 font-bold bg-amber-500/10 px-3 py-2 rounded-lg">
+                      ✓ Échelle 1:${state.scaleRatioInput}<br/>
+                    </div>
+                    <button onclick="resetScale()" class="text-zinc-400 hover:text-white text-xs underline mt-3 inline-block transition-colors">Modifier l'échelle</button>
+                  ` : (state.appState !== 'UPLOAD' ? `
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-3">
+                          <span class="text-sm font-bold text-white">1 :</span>
+                          <input type="number" id="scaleInput" value="${state.scaleRatioInput}" class="input-field w-20" placeholder="ex: 50"/>
+                          <button onclick="applyScaleRatio()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-1.5 rounded-xl text-sm font-bold transition-all active:scale-95">Valider</button>
+                        </div>
+                        ${!state.isPdf ? '<div class="text-[10px] text-amber-500 bg-amber-500/10 p-3 rounded-lg border border-amber-500/20 uppercase tracking-wide">⚠️ Image importée : L\'échelle mathématique pure est déconseillée.</div>' : ''}
+                    </div>
+                  ` : '')}
+                </div>`;
+
+                html += `
+                <div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900 shadow-xl mt-6">
+                   <h2 class="font-bold text-white mb-4">📁 Gestion du Projet</h2>
+                   <div class="grid grid-cols-2 gap-3">
+                     <button onclick="exportProjectData()" class="flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-500 text-white py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95">
+                       <span class="text-lg">💾</span> <span>Sauver</span>
+                     </button>
+                     <label class="flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-2.5 rounded-xl text-sm font-bold cursor-pointer transition-all active:scale-95">
+                       <span class="text-lg">📤</span> <span>Charger</span>
+                       <input type="file" accept=".json" class="hidden" onchange="importProjectData(event)" />
+                     </label>
+                   </div>
+                   <p class="text-[10px] text-zinc-500 uppercase tracking-widest mt-3 text-center">Sauvegarde image + mesures (.json)</p>
+                </div>`;
+            } 
+            else if (['LINE', 'AREA', 'POINT'].includes(state.activeTab)) {
+                const typeInfo = {
+                    LINE: { emoji: '✍️', title: 'Linéaires', tip: 'Double-clic pour terminer.', btn: 'Créer un linéaire', color: 'blue' },
+                    AREA: { emoji: '📐', title: 'Surfaces', tip: 'Ne croisez pas les lignes.', btn: 'Créer une surface', color: 'green' },
+                    POINT: { emoji: '🚩', title: 'Pointages', tip: 'Clic simple pour pointer.', btn: 'Créer un pointage', color: 'red' }
+                }[state.activeTab];
+
+                html += `
+                <div class="bg-zinc-900 border border-zinc-800 p-4 rounded-2xl text-sm text-zinc-400 shadow-sm mb-6">
+                  <strong class="block mb-2 text-white">${typeInfo.emoji} Tracé de ${typeInfo.title.toLowerCase()} :</strong>
+                  <ul class="list-disc pl-5 text-xs"><li>${typeInfo.tip}</li></ul>
+                </div>`;
+
+                if (state.editingTool) {
+                    html += buildToolEditorForm(state.activeTab);
+                } else {
+                    html += `<button onclick="startEditingTool('${state.activeTab}')" class="w-full flex items-center justify-center gap-2 border-2 border-dashed border-zinc-700 hover:border-amber-500 hover:text-amber-500 text-zinc-500 py-4 rounded-2xl transition-all font-bold mb-6">
+                        <span class="text-xl">+</span> <span>${typeInfo.btn}</span>
+                    </button>`;
+                }
+
+                html += buildToolList(state.activeTab);
+            }
+            else if (state.activeTab === 'SUMMARY') {
+                html += buildSummary();
+            }
+
+            els.drawerContent.innerHTML = html;
+        }
+
+        function buildToolEditorForm(currentType) {
+            const tool = state.editingTool;
+            const nameTitle = currentType === 'LINE' ? 'périmètre' : (currentType === 'AREA' ? 'outil de surface' : 'pointage');
+            const placeholder = currentType === 'LINE' ? 'Plinthes' : (currentType === 'AREA' ? 'Peinture plafond' : 'Prises électriques');
+            
+            let colorHtml = COLORS.map(c => {
+                const isChecked = tool.color === c.hex || (!tool.color && c.hex === '#3b82f6');
+                return `
+                <label class="cursor-pointer">
+                    <input type="radio" name="color" value="${c.hex}" ${isChecked ? 'checked' : ''} class="peer hidden" />
+                    <div class="text-xl p-1 rounded-full peer-checked:ring-2 peer-checked:ring-offset-2 peer-checked:ring-zinc-900" style="background-color: ${c.hex}20">${c.emoji}</div>
+                </label>`;
+            }).join('');
+
+            return `
+            <form onsubmit="saveTool(event)" class="bg-zinc-900 p-5 rounded-2xl border border-zinc-800 shadow-xl mb-6">
+              <h3 class="font-bold text-white mb-4">${tool.id ? '✍️ Modifier' : 'Nouveau'} ${nameTitle}</h3>
+              <input type="text" id="toolNameInput" value="${tool.name || ''}" placeholder="Nom (ex: ${placeholder})" class="input-field w-full mb-5" required />
+              <div class="flex justify-between mb-6 px-2">${colorHtml}</div>
+              <div class="flex gap-3">
+                <button type="submit" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white py-2 rounded-xl text-sm font-bold transition-all active:scale-95">Sauver</button>
+                <button type="button" onclick="cancelEditingTool()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-2 rounded-xl text-sm font-bold transition-all active:scale-95">Annuler</button>
+              </div>
+            </form>`;
+        }
+
+        function buildToolList(typeFilter) {
+            const filteredTools = state.tools.filter(t => t.type === typeFilter);
+            if (filteredTools.length === 0) return '<p class="text-sm text-zinc-600 uppercase tracking-widest text-center py-8">Aucun outil créé</p>';
+
+            return '<div class="space-y-3">' + filteredTools.map(tool => {
+                const isArea = tool.type === 'AREA';
+                const isPoint = tool.type === 'POINT';
+                const totalPerimeter = tool.measurements.reduce((acc, pts) => acc + calculateLength(pts, isArea), 0);
+                const totalArea = isArea ? tool.measurements.reduce((acc, pts) => acc + calculateArea(pts), 0) : 0;
+                const isActive = state.activeToolId === tool.id;
+                const borderClass = isActive ? 'border-amber-600 shadow-lg bg-zinc-900' : 'border-zinc-800 bg-zinc-950 hover:border-zinc-700';
+                
+                return `
+                <div class="p-4 border rounded-2xl flex flex-col transition-all cursor-pointer ${borderClass}" onclick="setActiveTool('${tool.id}')">
+                  <div class="flex justify-between items-center mb-3">
+                    <div class="flex items-center gap-3 flex-1">
+                      <div class="w-4 h-4 rounded-full shadow-inner" style="background-color: ${tool.color}; box-shadow: 0 0 10px ${tool.color}80"></div>
+                      <span class="font-bold text-sm ${isActive ? 'text-white' : 'text-zinc-300'}">${tool.name}</span>
+                    </div>
+                    <div class="flex gap-2">
+                      <button onclick="event.stopPropagation(); editTool('${tool.id}')" class="text-zinc-500 hover:text-white transition-colors bg-zinc-800 hover:bg-zinc-700 p-1.5 rounded-lg">✍️</button>
+                      <button onclick="event.stopPropagation(); deleteTool('${tool.id}')" class="text-zinc-500 hover:text-red-500 transition-colors bg-zinc-800 hover:bg-zinc-700 p-1.5 rounded-lg">❌</button>
+                    </div>
+                  </div>
+                  <div class="flex justify-between items-end text-xs pt-3 border-t border-zinc-800/50">
+                      <span class="text-zinc-500 uppercase tracking-wider text-[9px]">${isArea ? 'Surface & Contour' : (isPoint ? 'Unités' : 'Mètres linéaires')}</span>
+                      <div class="text-right">
+                          ${isArea ? `<div class="font-mono font-bold text-amber-500 text-sm">${totalArea.toFixed(2)} m²</div>` : ''}
+                          ${!isPoint ? `<div class="font-mono font-bold text-sm ${isArea ? 'text-zinc-500' : 'text-amber-500'}">${totalPerimeter.toFixed(2)} ml</div>` : ''}
+                          ${isPoint ? `<div class="font-mono font-bold text-amber-500 text-sm">${tool.measurements.length} u</div>` : ''}
+                      </div>
+                  </div>
+                </div>`;
+            }).join('') + '</div>';
+        }
+
+        function buildSummary() {
+            let html = '<div class="space-y-6">';
+            
+            const lineTools = state.tools.filter(t => t.type === 'LINE');
+            const totalLines = lineTools.reduce((acc, t) => acc + t.measurements.reduce((sum, pts) => sum + calculateLength(pts, false), 0), 0);
+            html += `
+            <div class="bg-zinc-950 border border-zinc-900 rounded-2xl overflow-hidden shadow-xl">
+                <div class="bg-zinc-900 p-4 border-b border-zinc-800 flex justify-between items-center">
+                <h3 class="font-bold text-white text-sm">📏 Mètres linéaires</h3>
+                <span class="text-sm font-mono font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded-md">${totalLines.toFixed(2)} ml</span>
+                </div>
+                <div class="p-4 space-y-3">
+                ${lineTools.length === 0 ? '<span class="text-[10px] text-zinc-600 uppercase tracking-widest">Aucune donnée</span>' : lineTools.map(t => `
+                    <div class="flex justify-between items-center text-sm border-b border-zinc-800/50 pb-2">
+                        <div class="flex items-center gap-3"><div class="w-3 h-3 rounded-full" style="background-color: ${t.color}"></div><span class="text-zinc-300 font-bold">${t.name}</span></div>
+                        <span class="font-mono text-zinc-400">${t.measurements.reduce((acc, pts) => acc + calculateLength(pts, false), 0).toFixed(2)} ml</span>
+                    </div>`).join('')}
+                </div>
+            </div>`;
+
+            const areaTools = state.tools.filter(t => t.type === 'AREA');
+            const totalAreas = areaTools.reduce((acc, t) => acc + t.measurements.reduce((sum, pts) => sum + calculateArea(pts), 0), 0);
+            html += `
+            <div class="bg-zinc-950 border border-zinc-900 rounded-2xl overflow-hidden shadow-xl">
+                <div class="bg-zinc-900 p-4 border-b border-zinc-800 flex justify-between items-center">
+                <h3 class="font-bold text-white text-sm">📐 Surfaces (m²)</h3>
+                <span class="text-sm font-mono font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded-md">${totalAreas.toFixed(2)} m²</span>
+                </div>
+                <div class="p-4 space-y-4">
+                ${areaTools.length === 0 ? '<span class="text-[10px] text-zinc-600 uppercase tracking-widest">Aucune donnée</span>' : areaTools.map(t => `
+                    <div class="flex flex-col text-sm border-b border-zinc-800/50 pb-3">
+                        <div class="flex justify-between items-center mb-2">
+                        <div class="flex items-center gap-3"><div class="w-3 h-3 rounded-full" style="background-color: ${t.color}"></div><span class="text-zinc-300 font-bold">${t.name}</span></div>
+                        <span class="font-mono font-bold text-amber-500">${t.measurements.reduce((acc, pts) => acc + calculateArea(pts), 0).toFixed(2)} m²</span>
+                        </div>
+                        <div class="flex justify-between items-center text-[10px] uppercase tracking-widest text-zinc-500 pl-6"><span>Contour :</span><span class="font-mono text-zinc-400">${t.measurements.reduce((acc, pts) => acc + calculateLength(pts, true), 0).toFixed(2)} ml</span></div>
+                    </div>`).join('')}
+                </div>
+            </div>`;
+
+            const pointTools = state.tools.filter(t => t.type === 'POINT');
+            const totalPoints = pointTools.reduce((acc, t) => acc + t.measurements.length, 0);
+            html += `
+            <div class="bg-zinc-950 border border-zinc-900 rounded-2xl overflow-hidden shadow-xl">
+                <div class="bg-zinc-900 p-4 border-b border-zinc-800 flex justify-between items-center">
+                <h3 class="font-bold text-white text-sm">🚩 Unités</h3>
+                <span class="text-sm font-mono font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded-md">${totalPoints} u</span>
+                </div>
+                <div class="p-4 space-y-3">
+                ${pointTools.length === 0 ? '<span class="text-[10px] text-zinc-600 uppercase tracking-widest">Aucune donnée</span>' : pointTools.map(t => `
+                    <div class="flex justify-between items-center text-sm border-b border-zinc-800/50 pb-2">
+                        <div class="flex items-center gap-3"><div class="w-3 h-3 rounded-full" style="background-color: ${t.color}"></div><span class="text-zinc-300 font-bold">${t.name}</span></div>
+                        <span class="font-mono font-bold text-zinc-400">${t.measurements.length} u</span>
+                    </div>`).join('')}
+                </div>
+            </div></div>`;
+
+            // Bouton d'impression
+            html += `
+            <div class="pt-4 border-t border-zinc-800">
+                <button onclick="generatePrintImage()" class="w-full flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-500 text-white py-3 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg">
+                    <span class="text-lg">🖨️</span> Imprimer le Devis
+                </button>
+            </div>`;
+
+            return html;
+        }
+
+        function drawCanvas() {
+            if (!state.imageSrc) return;
+            ctx.clearRect(0, 0, els.drawCanvas.width, els.drawCanvas.height);
+
+            const drawShape = (points, color, type, isPreview = false) => {
+                if (points.length === 0) return;
+                const safeColor = color || '#3b82f6';
+                
+                if (type === 'POINT') {
+                    ctx.fillStyle = safeColor;
+                    ctx.beginPath();
+                    ctx.arc(points[0].x, points[0].y, 6, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    return;
+                }
+                
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+                
+                if (type === 'AREA' && (points.length >= 3 || isPreview)) {
+                    ctx.closePath();
+                    if (!isPreview) {
+                        ctx.fillStyle = safeColor + '40'; 
+                        ctx.fill();
+                    }
+                }
+
+                ctx.strokeStyle = safeColor;
+                ctx.lineWidth = 3;
+                if (isPreview) ctx.setLineDash([5, 5]);
+                else ctx.setLineDash([]);
+                ctx.stroke();
+
+                ctx.fillStyle = 'white';
+                ctx.setLineDash([]);
+                points.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, 2 * Math.PI); ctx.fill(); ctx.stroke(); });
+            };
+
+            state.tools.forEach(tool => {
+                tool.measurements.forEach(pts => drawShape(pts, tool.color, tool.type));
+            });
+
+            if (state.currentLine.length > 0 && state.appState === 'MEASURE' && !state.isEraserMode) {
+                const activeTool = state.tools.find(t => t.id === state.activeToolId);
+                const tempPoints = [...state.currentLine, state.mousePos];
+                drawShape(tempPoints, activeTool ? activeTool.color : '#000', activeTool ? activeTool.type : 'LINE', true);
+            }
+
+            if (state.isEraserMode) {
+                ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(state.mousePos.x, state.mousePos.y, 15, 0, 2 * Math.PI);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(state.mousePos.x - 5, state.mousePos.y - 5); ctx.lineTo(state.mousePos.x + 5, state.mousePos.y + 5);
+                ctx.moveTo(state.mousePos.x + 5, state.mousePos.y - 5); ctx.lineTo(state.mousePos.x - 5, state.mousePos.y + 5);
+                ctx.stroke();
+            }
+        }
+
+        // --- 3. LOGIQUE GLOBALE (UI Actions) ---
+        function toggleTab(tabName) {
+            if (state.activeTab === tabName && state.isDrawerOpen) {
+                setState({ isDrawerOpen: false });
+            } else {
+                let updates = { activeTab: tabName, isDrawerOpen: true };
+                if (state.isEraserMode) updates.isEraserMode = false;
+                
+                if (['LINE', 'AREA', 'POINT'].includes(tabName)) {
+                    const typedTools = state.tools.filter(t => t.type === tabName);
+                    if (!typedTools.find(t => t.id === state.activeToolId)) {
+                        updates.activeToolId = typedTools.length > 0 ? typedTools[0].id : null;
+                    }
+                }
+                setState(updates);
+            }
+        }
+
+        function toggleEraser() { setState({ isEraserMode: !state.isEraserMode }); }
+        function resetScale() { setState({ pixelsPerMeter: null, appState: 'SETUP_SCALE' }); }
+        function setActiveTool(id) { setState({ activeToolId: id }); }
+        
+        function startEditingTool(type) { setState({ editingTool: { type: type, color: '#3b82f6' } }); }
+        function cancelEditingTool() { setState({ editingTool: null }); }
+        
+        function editTool(id) { setState({ editingTool: state.tools.find(t => t.id === id) }); }
+        function deleteTool(id) {
+            if(confirm("Supprimer cet outil et toutes ses mesures ?")) {
+                const newTools = state.tools.filter(t => t.id !== id);
+                let updates = { tools: newTools };
+                if (state.activeToolId === id) {
+                    const remaining = newTools.filter(t => t.type === state.activeTab);
+                    updates.activeToolId = remaining.length > 0 ? remaining[0].id : null;
+                }
+                setState(updates);
+            }
+        }
+
+        function saveTool(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('toolNameInput').value;
+            const colorRadio = document.querySelector('input[name="color"]:checked');
+            const selectedColor = colorRadio ? colorRadio.value : '#3b82f6';
+            const inferredType = state.activeTab;
+            
+            const newTool = {
+                id: state.editingTool.id || Date.now().toString(),
+                name: nameInput || 'Nouvel outil',
+                type: state.editingTool.id ? state.editingTool.type : inferredType,
+                color: selectedColor,
+                measurements: state.editingTool.measurements || []
+            };
+
+            const newTools = [...state.tools];
+            const existingIdx = newTools.findIndex(t => t.id === newTool.id);
+            if (existingIdx >= 0) newTools[existingIdx] = newTool;
+            else newTools.push(newTool);
+
+            setState({ tools: newTools, activeToolId: newTool.id, editingTool: null });
+        }
+
+        // --- 4. IMPORT/EXPORT (Fichiers & PDF) ---
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            setState({ isLoading: true });
+            
+            try {
+                if (file.type === 'application/pdf') {
+                    if (!window.pdfjsLib) {
+                        const script = document.createElement('script');
+                        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+                        await new Promise((res, rej) => { script.onload = res; script.onerror = rej; document.head.appendChild(script); });
+                        window.pdfjsLib = window['pdfjs-dist/build/pdf'];
+                        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                    }
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await window.pdfjsLib.getDocument(arrayBuffer).promise;
+                    const page = await pdf.getPage(1);
+                    const viewport = page.getViewport({ scale: 2.5 });
+                    const canvas = document.createElement('canvas');
+                    canvas.width = viewport.width; canvas.height = viewport.height;
+                    await page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
+                    loadImageFromUrl(canvas.toDataURL('image/png'), true);
+                } else if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => loadImageFromUrl(e.target.result, false);
+                    reader.readAsDataURL(file);
+                }
+            } catch (error) {
+                console.error(error); alert("Erreur de chargement."); setState({ isLoading: false });
+            }
+        }
+
+        function loadImageFromUrl(url, isPdf) {
+            const img = new Image();
+            img.onload = () => {
+                setState({ 
+                    imageSrc: url, imageObj: img, imageSize: { width: img.width, height: img.height },
+                    isPdf: isPdf, appState: 'SETUP_SCALE', isLoading: false, transform: { scale: 1, x: 0, y: 0 }
+                });
+            };
+            img.src = url;
+        }
+
+        function applyScaleRatio() {
+            const inputEl = document.getElementById('scaleInput');
+            if (inputEl) state.scaleRatioInput = inputEl.value;
+
+            const s = parseFloat(state.scaleRatioInput);
+            if (isNaN(s) || s <= 0) return alert("Échelle invalide.");
+            const pxPerMeter = (1000 * 72 * 2.5) / (25.4 * s);
+            setState({ pixelsPerMeter: pxPerMeter, appState: 'MEASURE' });
+            toggleTab('LINE');
+        }
+
+        function exportProjectData() {
+            if (!state.imageSrc) return alert("Aucun projet.");
+            setState({ isLoading: true });
+            setTimeout(() => {
+                const data = { version: "1.0", imageBase64: state.imageSrc, isPdf: state.isPdf, scaleRatioInput: state.scaleRatioInput, pixelsPerMeter: state.pixelsPerMeter, tools: state.tools, appState: state.appState };
+                const a = document.createElement('a');
+                a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+                a.download = "projet_metre.json";
+                a.click();
+                setState({ isLoading: false });
+            }, 100);
+        }
+
+        function importProjectData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            setState({ isLoading: true });
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    // Chargement asynchrone sécurisé de l'image de sauvegarde
+                    const img = new Image();
+                    img.onload = () => {
+                        setState({
+                            imageSrc: data.imageBase64,
+                            imageObj: img,
+                            imageSize: { width: img.width, height: img.height },
+                            isPdf: data.isPdf,
+                            scaleRatioInput: data.scaleRatioInput,
+                            pixelsPerMeter: data.pixelsPerMeter,
+                            tools: data.tools || [],
+                            appState: data.appState || 'MEASURE', // Restaure l'état déverrouillé de dessin
+                            isLoading: false,
+                            transform: { scale: 1, x: 0, y: 0 }
+                        });
+                        toggleTab('SUMMARY');
+                    };
+                    img.onerror = () => {
+                        alert("Erreur lors du chargement de l'image sauvegardée.");
+                        setState({ isLoading: false });
+                    };
+                    img.src = data.imageBase64;
+                    
+                } catch (err) { 
+                    alert("Fichier corrompu ou format incorrect."); 
+                    setState({ isLoading: false }); 
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- 5. MATHÉMATIQUES & COLLISION ---
+        const getDistance = (p1, p2) => Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+        const calculateLength = (pts, closed) => {
+            if (pts.length < 2 || !state.pixelsPerMeter) return 0;
+            let l = 0; for (let i=1; i<pts.length; i++) l += getDistance(pts[i-1], pts[i]);
+            if (closed && pts.length > 2) l += getDistance(pts[pts.length-1], pts[0]);
+            return l / state.pixelsPerMeter;
+        };
+        const calculateArea = (pts) => {
+            if (pts.length < 3 || !state.pixelsPerMeter) return 0;
+            let a = 0;
+            for (let i=0; i<pts.length; i++) { let j=(i+1)%pts.length; a += pts[i].x*pts[j].y - pts[j].x*pts[i].y; }
+            return (Math.abs(a)/2) / Math.pow(state.pixelsPerMeter, 2);
+        };
+        const distToSegment = (p, v, w) => {
+            const l2 = Math.pow(w.x - v.x, 2) + Math.pow(w.y - v.y, 2);
+            if (l2 === 0) return getDistance(p, v);
+            let t = Math.max(0, Math.min(1, ((p.x - v.x)*(w.x - v.x) + (p.y - v.y)*(w.y - v.y)) / l2));
+            return getDistance(p, { x: v.x + t*(w.x - v.x), y: v.y + t*(w.y - v.y) });
+        };
+
+        // --- GÉNÉRATION D'IMPRESSION (DEVIS) ---
+        function generatePrintImage() {
+            const canvas = els.printCanvas;
+            const ctx = canvas.getContext('2d');
+            const padding = 50;
+            const rowHeight = 35;
+
+            // Configuration des dimensions
+            canvas.width = 800;
+            canvas.height = 200 + (state.tools.length * rowHeight) + 100;
+
+            // FOND BLANC (Optimisation d'encre pour l'impression physique)
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // EN-TÊTE
+            ctx.fillStyle = '#000000';
+            ctx.font = 'bold 24px sans-serif';
+            ctx.fillText('RÉCAPITULATIF DE MÉTRÉ (DEVIS)', padding, 60);
+
+            ctx.font = '14px sans-serif';
+            ctx.fillStyle = '#666666';
+            ctx.fillText('Généré le ' + new Date().toLocaleString('fr-FR'), padding, 90);
+
+            // EN-TÊTE DU TABLEAU
+            ctx.fillStyle = '#000000';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText('DÉSIGNATION', padding, 140);
+            ctx.textAlign = 'right';
+            ctx.fillText('TOTAL NET', 550, 140);
+            ctx.fillText('TOTAL MAJORÉ (+10%)', 750, 140);
+
+            ctx.beginPath();
+            ctx.moveTo(padding, 150);
+            ctx.lineTo(750, 150);
+            ctx.strokeStyle = '#EEEEEE';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // LIGNES DE DEVIS
+            ctx.textAlign = 'left';
+            let y = 180;
+            
+            if (state.tools.length === 0) {
+                ctx.font = 'italic 14px sans-serif';
+                ctx.fillStyle = '#999999';
+                ctx.fillText("Aucune donnée enregistrée.", padding, y);
+            } else {
+                state.tools.forEach((tool, index) => {
+                    let net = 0;
+                    let unit = '';
+                    
+                    if (tool.type === 'LINE') {
+                        net = tool.measurements.reduce((acc, pts) => acc + calculateLength(pts, false), 0);
+                        unit = 'ml';
+                    } else if (tool.type === 'AREA') {
+                        net = tool.measurements.reduce((acc, pts) => acc + calculateArea(pts), 0);
+                        unit = 'm²';
+                    } else if (tool.type === 'POINT') {
+                        net = tool.measurements.length;
+                        unit = 'u';
+                    }
+
+                    let maj = net * 1.10; // Majoration 10%
+
+                    // Ligne zébrée pour la lisibilité
+                    if (index % 2 === 0) {
+                        ctx.fillStyle = '#F9F9F9';
+                        ctx.fillRect(padding - 10, y - 22, 750 - padding + 20, rowHeight);
+                    }
+
+                    ctx.fillStyle = '#000000';
+                    ctx.font = 'bold 14px sans-serif';
+                    ctx.textAlign = 'left';
+                    const icon = tool.type === 'LINE' ? '📏 ' : (tool.type === 'AREA' ? '📐 ' : '🚩 ');
+                    ctx.fillText(icon + tool.name, padding, y);
+
+                    ctx.textAlign = 'right';
+                    ctx.font = '14px monospace';
+                    ctx.fillStyle = '#444444';
+                    ctx.fillText(net.toFixed(2) + ' ' + unit, 550, y);
+
+                    ctx.font = 'bold 14px monospace';
+                    ctx.fillStyle = '#D97706'; // Accent ambré
+                    ctx.fillText(maj.toFixed(2) + ' ' + unit, 750, y);
+
+                    y += rowHeight;
+                });
+            }
+
+            // EXPORT PNG
+            const link = document.createElement('a');
+            link.download = `Devis_Metre_${new Date().toISOString().slice(0,10)}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // --- 6. GESTION SOURIS & CANVAS ---
+        function getCanvasCoords(e) {
+            const rect = els.drawCanvas.getBoundingClientRect();
+            return { x: (e.clientX - rect.left) * (els.drawCanvas.width / rect.width), y: (e.clientY - rect.top) * (els.drawCanvas.height / rect.height) };
+        }
+
+        // Gestion du Plein Écran (Multi-navigateurs)
+        function toggleFullScreen() {
+            const elem = document.documentElement;
+            const isFs = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+            
+            if (!isFs) {
+                // Entrer en plein écran
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen().catch(err => {
+                        alert("Le plein écran est bloqué par l'environnement actuel (ex: fenêtre intégrée/iFrame). Veuillez ouvrir le fichier .html directement dans un nouvel onglet de votre navigateur.");
+                    });
+                } else if (elem.webkitRequestFullscreen) { /* Safari */
+                    elem.webkitRequestFullscreen();
+                } else if (elem.msRequestFullscreen) { /* IE11 */
+                    elem.msRequestFullscreen();
+                } else if (elem.mozRequestFullScreen) { /* Firefox */
+                    elem.mozRequestFullScreen();
+                } else {
+                    alert("Votre navigateur ne supporte pas le mode plein écran.");
+                }
+            } else {
+                // Quitter le plein écran
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                }
+            }
+        }
+
+        // Synchronisation multi-navigateurs de l'icône
+        function updateFsIcon() {
+            const icon = document.getElementById('icon-fullscreen');
+            if (icon) {
+                const isFs = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+                icon.textContent = isFs ? '🗗' : '⛶';
+            }
+        }
+
+        document.addEventListener('fullscreenchange', updateFsIcon);
+        document.addEventListener('webkitfullscreenchange', updateFsIcon);
+        document.addEventListener('mozfullscreenchange', updateFsIcon);
+        document.addEventListener('MSFullscreenChange', updateFsIcon);
+
+        function handleButtonZoom(zoomFactor) {
+            if (!state.imageSrc) return;
+            const newScale = Math.min(Math.max(0.1, state.transform.scale * zoomFactor), 20);
+            
+            const rect = els.workspace.getBoundingClientRect();
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            
+            const scaleRatio = newScale / state.transform.scale;
+            const newX = centerX - (centerX - state.transform.x) * scaleRatio;
+            const newY = centerY - (centerY - state.transform.y) * scaleRatio;
+
+            setState({ transform: { scale: newScale, x: newX, y: newY } });
+        }
+
+        els.workspace.addEventListener('wheel', e => {
+            if (!state.imageSrc) return;
+            const delta = -e.deltaY * 0.0015;
+            const newScale = Math.min(Math.max(0.1, state.transform.scale * Math.exp(delta)), 20);
+            const rect = els.workspace.getBoundingClientRect();
+            const ratio = newScale / state.transform.scale;
+            setState({ transform: { scale: newScale, x: (e.clientX - rect.left) - ((e.clientX - rect.left) - state.transform.x)*ratio, y: (e.clientY - rect.top) - ((e.clientY - rect.top) - state.transform.y)*ratio } });
+        });
+
+        els.workspace.addEventListener('pointerdown', e => {
+            if (e.button === 1 || (e.button === 0 && e.altKey)) {
+                e.preventDefault();
+                setState({ isPanning: true, panStart: { x: e.clientX - state.transform.x, y: e.clientY - state.transform.y } });
+            }
+        });
+
+        els.workspace.addEventListener('pointermove', e => {
+            if (state.isPanning) setState({ transform: { ...state.transform, x: e.clientX - state.panStart.x, y: e.clientY - state.panStart.y } });
+            else if (state.imageSrc) setState({ mousePos: getCanvasCoords(e) });
+        });
+
+        els.workspace.addEventListener('pointerup', () => { if(state.isPanning) setState({ isPanning: false }); });
+        els.workspace.addEventListener('pointerleave', () => { if(state.isPanning) setState({ isPanning: false }); });
+
+        els.drawCanvas.addEventListener('click', e => {
+            if (e.button !== 0 || state.isPanning || e.altKey) return;
+            const point = getCanvasCoords(e);
+
+            if (state.isEraserMode) {
+                let hit = false, newTools = [...state.tools];
+                for (let t = newTools.length-1; t>=0 && !hit; t--) {
+                    let meas = [...newTools[t].measurements];
+                    for (let m = meas.length-1; m>=0; m--) {
+                        let pts = meas[m], isHit = false;
+                        if (newTools[t].type === 'POINT') { if (pts.length && getDistance(point, pts[0])<=15) isHit=true; }
+                        else {
+                            for (let i=0; i<pts.length-1; i++) if (distToSegment(point, pts[i], pts[i+1])<=15) isHit=true;
+                            if (newTools[t].type==='AREA' && pts.length>=3 && distToSegment(point, pts[pts.length-1], pts[0])<=15) isHit=true;
+                        }
+                        if (isHit) { meas.splice(m, 1); newTools[t] = {...newTools[t], measurements: meas}; hit = true; break; }
+                    }
+                }
+                if (hit) setState({ tools: newTools });
+                return;
+            }
+
+            if (state.appState === 'MEASURE' && ['LINE','AREA','POINT'].includes(state.activeTab)) {
+                if (!state.activeToolId) return alert("Veuillez sélectionner un outil."), setState({isDrawerOpen: true});
+                if (state.activeTab === 'POINT') {
+                    const newTools = state.tools.map(t => t.id === state.activeToolId ? {...t, measurements: [...t.measurements, [point]]} : t);
+                    setState({tools: newTools}); return;
+                }
+                let updates = { currentLine: [...state.currentLine, point] };
+                if (state.currentLine.length === 0) updates.isDrawerOpen = false;
+                setState(updates);
+            }
+        });
+
+        const finishLine = (e) => {
+            if(e) e.preventDefault();
+            if(state.isEraserMode) return;
+            const tool = state.tools.find(t => t.id === state.activeToolId);
+            if (!tool) return;
+            const min = tool.type === 'AREA' ? 3 : 2;
+            if (state.currentLine.length >= min) {
+                const newTools = state.tools.map(t => t.id === state.activeToolId ? {...t, measurements: [...t.measurements, state.currentLine]} : t);
+                setState({ tools: newTools, currentLine: [], isDrawerOpen: true });
+            } else if (state.currentLine.length > 0) alert(`Il faut ${min} points minimum.`);
+        };
+
+        els.drawCanvas.addEventListener('contextmenu', finishLine);
+        els.drawCanvas.addEventListener('dblclick', finishLine);
+
+        window.addEventListener('keydown', e => {
+            if (e.key === 'Escape') setState({ currentLine: [], isDrawerOpen: true, isEraserMode: false });
+            if (e.key === 'Backspace' && !state.isEraserMode) setState({ currentLine: state.currentLine.slice(0, -1) });
+            if (e.key === 'Enter' && !state.isEraserMode) finishLine();
+        });
+
+        // Initialize Render
+        renderDOM();
+    </script>
+</body>
+</html>

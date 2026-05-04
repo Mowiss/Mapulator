@@ -558,7 +558,10 @@ function buildSummary(){
 function drawCanvas(){
     if(!state.imageSrc) return;
     ctx.clearRect(0,0,els.drawCanvas.width,els.drawCanvas.height);
-    state.tools.forEach(tool=>{ if(!tool.hidden) tool.measurements.forEach(pts=>drawShape(pts,tool,false)); });
+    // Ordre : Tranchées en fond, puis VRD/Surfaces, puis Pointages au-dessus
+    const ORDER = ['TRANCHEE','AREA','VRD','POINT'];
+    [...state.tools].sort((a,b)=>ORDER.indexOf(a.type)-ORDER.indexOf(b.type))
+        .forEach(tool=>{ if(!tool.hidden) tool.measurements.forEach(pts=>drawShape(pts,tool,false)); });
     if(state.currentLine.length>0&&state.appState==='MEASURE'&&!state.isEraserMode){
         const at=state.tools.find(t=>t.id===state.activeToolId);
         if(at) drawShape([...state.currentLine,state.mousePos],at,true);
@@ -622,7 +625,9 @@ function drawShape(points,tool,isPreview){
         ctx.closePath();
         if(!isPreview){ctx.fillStyle=color+'30';ctx.fill();}
     }
-    ctx.strokeStyle=color; ctx.lineWidth=thick;
+    // VRD : trait fin fixe 1.5px, indépendant de la réglette Tranchée
+    const strokeW = type==='VRD' ? 1.5 : thick;
+    ctx.strokeStyle=color; ctx.lineWidth=strokeW;
     ctx.setLineDash(isPreview?[7,4]:[]);
     ctx.stroke(); ctx.setLineDash([]);
     if(!isPreview){

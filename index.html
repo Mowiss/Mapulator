@@ -3,942 +3,765 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Outil de Métré Professionnel</title>
-    <!-- Tailwind CSS -->
+    <title>Mapulator — Outil de Métré VRD</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;600;700&display=swap');
-        
-        body { 
-            font-family: 'Comfortaa', cursive; 
-            background-color: #000000; 
+
+        :root {
+            --toolbar-h: 52px;
+            --creator-h: 64px;
+            --amber: #f59e0b;
+            --amber-dk: #d97706;
+            --bg: #080808;
+            --surface: #0f0f0f;
+            --border: #1c1c1e;
+            --border2: #27272a;
+            --muted: #3f3f46;
+            --text: #a1a1aa;
+            --white: #e4e4e7;
         }
-        
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: 'Comfortaa', cursive;
+            background: var(--bg);
+            color: var(--text);
+            overflow: hidden;
+            height: 100vh; width: 100vw;
+            margin: 0;
+        }
+
         input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        
-        .input-field {
-            @apply bg-white border border-zinc-300 rounded-lg px-3 py-1.5 text-black font-bold outline-none transition-all placeholder-zinc-400 text-sm;
-            color: #000000 !important;
+        input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+        #toolbar {
+            position: fixed; top: 0; left: 0; right: 0;
+            height: var(--toolbar-h);
+            background: #0a0a0a; border-bottom: 1px solid var(--border);
+            z-index: 60; display: flex; align-items: center; padding: 0 10px; gap: 2px;
         }
 
-        .input-field:focus {
-            @apply border-amber-500 ring-2 ring-amber-500/50;
+        /* OVERLAY — ne décale pas le workspace */
+        #creatorBar {
+            position: fixed; top: var(--toolbar-h); left: 0; right: 0;
+            height: 0; overflow: hidden;
+            background: #0c0c0c; border-bottom: 1px solid var(--border);
+            z-index: 59; display: flex; align-items: center; padding: 0 16px; gap: 10px;
+            transition: height 0.2s cubic-bezier(0.4,0,0.2,1);
+        }
+        #creatorBar.open { height: var(--creator-h); }
+
+        #drawer {
+            position: fixed; top: var(--toolbar-h); left: 0;
+            width: 300px; height: calc(100vh - var(--toolbar-h));
+            background: #0a0a0a; border-right: 1px solid var(--border);
+            z-index: 55; display: flex; flex-direction: column;
+            transform: translateX(-100%);
+            transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+            box-shadow: 6px 0 40px rgba(0,0,0,0.8);
+        }
+        #drawer.open { transform: translateX(0); }
+
+        /* Workspace FIXE — jamais décalé */
+        #workspace {
+            position: fixed; top: var(--toolbar-h); left: 0; right: 0; bottom: 0;
+            background: #0d0d0d; touch-action: none; z-index: 10;
         }
 
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #000000; }
-        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
+        .tb-btn {
+            display: flex; align-items: center; gap: 6px;
+            padding: 5px 11px; border-radius: 7px;
+            font-size: 0.72rem; font-weight: 700; font-family: 'Comfortaa', cursive;
+            cursor: pointer; border: 1px solid transparent;
+            color: var(--muted); background: transparent;
+            white-space: nowrap; transition: all 0.12s; flex-shrink: 0;
+        }
+        .tb-btn:hover { background: #18181b; color: var(--white); border-color: var(--border2); }
+        .tb-btn.active { background: #1c1400; color: #fbbf24; border-color: var(--amber-dk); }
+        .tb-btn.danger:hover { background: #1f0808; color: #fca5a5; border-color: #450a0a; }
+        .tb-btn.danger.active { background: #450a0a; color: #fca5a5; border-color: #dc2626; }
+        .tb-sep { width:1px; height:24px; background:var(--border); margin:0 4px; flex-shrink:0; }
+        .tb-label { font-size:0.58rem; color:#2d2d30; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; flex-shrink:0; }
+        .tb-spacer { flex:1; min-width:0; }
 
-        /* Styles spécifiques pour le Canvas */
-        #workspace { touch-action: none; } /* Empêche le scroll tactile par défaut */
+        .cr-input {
+            height: 32px; background: #18181b; border: 1px solid var(--border2);
+            border-radius: 8px; padding: 0 11px; color: var(--white);
+            font-family: 'Comfortaa', cursive; font-size: 0.78rem; font-weight: 600;
+            outline: none; transition: border-color 0.15s; min-width: 0;
+        }
+        .cr-input:focus { border-color: var(--amber); }
+        .cr-input::placeholder { color: var(--muted); }
+
+        .cr-color {
+            width: 22px; height: 22px; border-radius: 50%; cursor: pointer;
+            border: 2px solid transparent; transition: all 0.12s; flex-shrink: 0;
+        }
+        .cr-color:hover { transform: scale(1.2); }
+        .cr-color.sel { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,0.25); transform: scale(1.2); }
+
+        .cr-btn {
+            height: 32px; padding: 0 14px; border-radius: 8px;
+            font-family: 'Comfortaa', cursive; font-size: 0.73rem; font-weight: 700;
+            cursor: pointer; border: 1px solid transparent; transition: all 0.12s; flex-shrink: 0;
+        }
+        .cr-save   { background: var(--amber-dk); color: #000; border-color: var(--amber); }
+        .cr-save:hover { background: var(--amber); }
+        .cr-cancel { background: #18181b; color: var(--muted); border-color: var(--border2); }
+        .cr-cancel:hover { background: var(--border2); color: var(--white); }
+
+        .cr-range {
+            -webkit-appearance: none; height: 4px; border-radius: 2px;
+            background: var(--border2); outline: none; cursor: pointer; width: 76px;
+        }
+        .cr-range::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 14px; height: 14px;
+            border-radius: 50%; background: var(--amber); cursor: pointer;
+        }
+
+        .d-input {
+            background: #18181b; border: 1px solid var(--border2); border-radius: 8px;
+            padding: 7px 11px; color: var(--white) !important;
+            font-family: 'Comfortaa', cursive; font-weight: 600; font-size: 0.78rem;
+            outline: none; transition: border-color 0.15s;
+        }
+        .d-input:focus { border-color: var(--amber); }
+
+        .tool-card {
+            border: 1px solid var(--border); border-radius: 13px; padding: 11px 13px;
+            cursor: pointer; transition: all 0.12s; background: var(--surface);
+        }
+        .tool-card:hover { border-color: var(--border2); }
+        .tool-card.active { border-color: var(--amber-dk); background: #0f0a00; }
+
+        #eraserBanner {
+            position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+            background: #1f0808; border: 1px solid #7f1d1d; color: #fca5a5;
+            padding: 8px 18px; border-radius: 999px; z-index: 70;
+            display: none; align-items: center; gap: 14px;
+            font-size: 0.77rem; font-weight: 700; box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+        }
+
+        .vrd-icon-btn {
+            width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--border2);
+            background: #18181b; cursor: pointer; display: flex; align-items: center;
+            justify-content: center; transition: all 0.12s; flex-shrink: 0;
+        }
+        .vrd-icon-btn:hover { border-color: var(--amber-dk); background: #1c1400; }
+        .vrd-icon-btn.sel { border-color: var(--amber); background: #1c1400; box-shadow: 0 0 0 2px rgba(245,158,11,0.2); }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes slideD { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
+        .slide-d { animation: slideD 0.16s ease forwards; }
     </style>
 </head>
-<body class="flex h-screen w-full bg-black font-sans text-zinc-300 overflow-hidden relative">
+<body>
 
-    <!-- BANNIÈRE MODE GOMME -->
-    <div id="eraserBanner" class="hidden fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-900 border border-red-700 text-red-100 px-6 py-3 rounded-full shadow-2xl z-50 flex items-center space-x-4 animate-bounce">
-        <span class="font-bold">🗑️ Mode Gomme Actif</span>
-        <span class="text-sm border-l border-red-500 pl-4">Cliquez sur une forme pour l'effacer</span>
-        <button onclick="toggleEraser()" class="bg-red-100 text-red-900 text-xs font-bold px-3 py-1 rounded hover:bg-white transition-colors">Désactiver</button>
+<div id="toolbar">
+    <div style="display:flex;align-items:center;gap:8px;margin-right:6px;flex-shrink:0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <polygon points="12,2 22,8 22,16 12,22 2,16 2,8" fill="#d97706" opacity="0.12" stroke="#d97706" stroke-width="1.5"/>
+            <circle cx="12" cy="12" r="2.8" fill="#f59e0b"/>
+            <line x1="12" y1="5" x2="12" y2="9.2" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="12" y1="14.8" x2="12" y2="19" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="5" y1="8.5" x2="8.6" y2="10.6" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="15.4" y1="13.4" x2="19" y2="15.5" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="5" y1="15.5" x2="8.6" y2="13.4" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="15.4" y1="10.6" x2="19" y2="8.5" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span style="color:#fff;font-weight:700;font-size:0.82rem;letter-spacing:0.06em;">MAPULATOR</span>
     </div>
+    <div class="tb-sep"></div>
+    <button id="tb-SETUP" onclick="toggleTab('SETUP')" class="tb-btn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/></svg>
+        Setup
+    </button>
+    <div class="tb-sep"></div>
+    <span class="tb-label">Outils</span>
+    <button id="tb-VRD" onclick="toggleTab('VRD')" class="tb-btn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M3 12h18"/><circle cx="3" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="21" cy="12" r="1.8" fill="currentColor" stroke="none"/>
+        </svg>
+        VRD
+    </button>
+    <button id="tb-TRANCHEE" onclick="toggleTab('TRANCHEE')" class="tb-btn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <rect x="2" y="8" width="20" height="8" rx="2" fill="currentColor" opacity="0.18"/><rect x="2" y="8" width="20" height="8" rx="2"/>
+            <line x1="7" y1="8" x2="7" y2="16"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="17" y1="8" x2="17" y2="16"/>
+        </svg>
+        Tranchée
+    </button>
+    <button id="tb-AREA" onclick="toggleTab('AREA')" class="tb-btn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <polygon points="3,19 12,3 21,19" fill="currentColor" opacity="0.18"/><polygon points="3,19 12,3 21,19"/>
+            <circle cx="3" cy="19" r="1.8" fill="currentColor" stroke="none"/><circle cx="12" cy="3" r="1.8" fill="currentColor" stroke="none"/><circle cx="21" cy="19" r="1.8" fill="currentColor" stroke="none"/>
+        </svg>
+        Surfaces
+    </button>
+    <button id="tb-POINT" onclick="toggleTab('POINT')" class="tb-btn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="currentColor" opacity="0.2"/>
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+            <circle cx="12" cy="9" r="2.5" fill="currentColor" opacity="0.7"/>
+        </svg>
+        Pointage
+    </button>
+    <div class="tb-sep"></div>
+    <button id="tb-SUMMARY" onclick="toggleTab('SUMMARY')" class="tb-btn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="7" y1="16" x2="13" y2="16"/>
+        </svg>
+        Récap
+    </button>
+    <div class="tb-spacer"></div>
+    <button id="tb-eraser" onclick="toggleEraser()" class="tb-btn danger">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M20 20H7L3 16l10-10 7 7-3.5 3.5"/><path d="M6 11l7 7"/>
+        </svg>
+        Gomme
+    </button>
+    <div class="tb-sep"></div>
+    <button onclick="handleButtonZoom(1.2)" class="tb-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+    <button onclick="handleButtonZoom(1/1.2)" class="tb-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+    <button onclick="toggleFullScreen()" id="btn-fs" class="tb-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></button>
+</div>
 
-    <!-- WIDGET ZOOM FLOTTANT -->
-    <div id="zoomWidget" class="hidden fixed top-6 right-6 z-40 flex-col gap-2">
-        <button onclick="handleButtonZoom(1.2)" class="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-amber-500 hover:border-amber-500 shadow-xl flex items-center justify-center transition-all" title="Zoom +">
-            <span class="text-sm font-bold">🔎+</span>
-        </button>
-        <button onclick="handleButtonZoom(1 / 1.2)" class="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-amber-500 hover:border-amber-500 shadow-xl flex items-center justify-center transition-all" title="Zoom -">
-            <span class="text-sm font-bold">🔎-</span>
-        </button>
-        <button id="btn-fullscreen" onclick="toggleFullScreen()" class="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-amber-500 hover:border-amber-500 shadow-xl flex items-center justify-center transition-all mt-2" title="Plein écran">
-            <span id="icon-fullscreen" class="text-xl font-bold">⛶</span>
-        </button>
-        <button id="btn-eraser" onclick="toggleEraser()" class="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-red-500 hover:border-red-500 shadow-xl flex items-center justify-center transition-all mt-2" title="Outil Gomme">
-            <span class="text-xl font-bold">🗑️</span>
-        </button>
+<div id="creatorBar"></div>
+
+<div id="drawer">
+    <div style="padding:13px 15px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--surface);">
+        <span id="drawerTitle" style="color:#fff;font-weight:700;font-size:0.82rem;"></span>
+        <button onclick="closeDrawer()" style="color:var(--muted);background:none;border:none;cursor:pointer;font-size:1rem;padding:2px 6px;border-radius:5px;font-family:inherit;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--muted)'">✕</button>
     </div>
+    <div id="drawerContent" style="padding:13px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;"></div>
+</div>
 
-    <!-- TIROIR PRINCIPAL -->
-    <div id="drawer" class="fixed top-0 left-0 h-full w-80 bg-zinc-950 shadow-2xl flex flex-col z-30 border-r border-zinc-900 transition-transform duration-300 ease-in-out translate-x-0">
-        
-        <!-- LANGUETTES -->
-        <div id="tabsContainer" class="absolute top-20 -right-12 flex flex-col space-y-2">
-            <!-- Rendu dynamique par JS -->
+<div id="workspace">
+    <div id="emptyState" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#27272a;font-size:0.82rem;pointer-events:none;">
+        Ouvrez <span style="color:var(--amber-dk);margin:0 5px;font-weight:700;">Setup</span> pour importer un plan
+    </div>
+    <div id="loader" style="display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.88);z-index:80;backdrop-filter:blur(4px);">
+        <div style="font-size:2.2rem;animation:spin 0.9s linear infinite;">⚙️</div>
+        <div style="color:#fff;font-weight:700;margin-top:10px;font-size:0.9rem;">Traitement…</div>
+    </div>
+    <div id="canvasContainer" style="display:none;position:absolute;transform-origin:top left;border:1px solid var(--border);">
+        <img id="bgImage" alt="Plan" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:block;"/>
+        <canvas id="drawCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;"></canvas>
+    </div>
+    <canvas id="printCanvas" style="display:none;"></canvas>
+</div>
+
+<div id="eraserBanner">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 20H7L3 16l10-10 7 7-3.5 3.5"/><path d="M6 11l7 7"/></svg>
+    Mode Gomme — cliquez une forme pour effacer
+    <button onclick="toggleEraser()" style="background:#fca5a5;color:#450a0a;font-size:0.68rem;font-weight:700;padding:3px 9px;border-radius:999px;border:none;cursor:pointer;font-family:inherit;">Désactiver</button>
+</div>
+
+<script>
+const VRD_ICONS = {
+    regard:     { label:'Regard',          svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="7" y="7" width="10" height="10" rx="1" fill="currentColor" opacity="0.15"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="12" y1="7" x2="12" y2="17"/></svg>` },
+    vanne:      { label:'Vanne',           svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polygon points="5,7 19,7 15,12 19,17 5,17 9,12" fill="currentColor" opacity="0.15"/><polygon points="5,7 19,7 15,12 19,17 5,17 9,12"/><line x1="12" y1="4" x2="12" y2="7"/><line x1="9" y1="4" x2="15" y2="4"/></svg>` },
+    bouche:     { label:'Bouche incendie', svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="8" y="10" width="8" height="10" rx="1" fill="currentColor" opacity="0.15"/><rect x="8" y="10" width="8" height="10" rx="1"/><path d="M6 13h2M16 13h2"/><rect x="10" y="6" width="4" height="4" rx="1"/><line x1="12" y1="4" x2="12" y2="6"/></svg>` },
+    poteau:     { label:'Poteau',          svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="20" x2="12" y2="6"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="9" y1="9" x2="15" y2="9"/><circle cx="12" cy="5" r="1.5" fill="currentColor"/></svg>` },
+    lampadaire: { label:'Lampadaire',      svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="20" x2="12" y2="9"/><path d="M12 9 Q12 4 17 4"/><circle cx="17" cy="4" r="2" fill="currentColor" opacity="0.4"/><line x1="10" y1="20" x2="14" y2="20"/></svg>` }
+};
+
+const COLORS = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#a855f7'];
+
+let state = {
+    activeTab: null, isDrawerOpen: false,
+    isCreatorOpen: false, creatorMode: null,
+    creatorData: { name:'', color:COLORS[4], thickness:20, pointSize:12, editingId:null, vrdIcon:'regard', trancheeW:'0.80', trancheeD:'1.20' },
+    appState: 'UPLOAD',
+    imageSrc: null, imageObj: null, imageSize: {w:0,h:0},
+    isPdf: false, scaleRatioInput: '50',
+    isLoading: false, pixelsPerMeter: null,
+    tools: [], activeToolId: null,
+    isEraserMode: false, currentLine: [],
+    mousePos: {x:0,y:0}, transform: {scale:1,x:0,y:0},
+    isPanning: false, panStart: {x:0,y:0}
+};
+
+const els = {
+    creatorBar:      document.getElementById('creatorBar'),
+    drawer:          document.getElementById('drawer'),
+    drawerTitle:     document.getElementById('drawerTitle'),
+    drawerContent:   document.getElementById('drawerContent'),
+    workspace:       document.getElementById('workspace'),
+    emptyState:      document.getElementById('emptyState'),
+    loader:          document.getElementById('loader'),
+    canvasContainer: document.getElementById('canvasContainer'),
+    bgImage:         document.getElementById('bgImage'),
+    drawCanvas:      document.getElementById('drawCanvas'),
+    eraserBanner:    document.getElementById('eraserBanner'),
+    printCanvas:     document.getElementById('printCanvas'),
+};
+const ctx = els.drawCanvas.getContext('2d');
+
+function setState(upd) { Object.assign(state, upd); renderDOM(); drawCanvas(); }
+
+function renderDOM() {
+    els.loader.style.display     = state.isLoading ? 'flex' : 'none';
+    els.emptyState.style.display = (!state.imageSrc && !state.isLoading) ? 'flex' : 'none';
+
+    if (state.imageSrc) {
+        els.canvasContainer.style.display = 'block';
+        if (els.bgImage.src !== state.imageSrc) els.bgImage.src = state.imageSrc;
+        els.canvasContainer.style.width  = state.imageSize.w + 'px';
+        els.canvasContainer.style.height = state.imageSize.h + 'px';
+        els.drawCanvas.width  = state.imageSize.w;
+        els.drawCanvas.height = state.imageSize.h;
+        els.canvasContainer.style.transform = `translate(${state.transform.x}px,${state.transform.y}px) scale(${state.transform.scale})`;
+        const at = state.tools.find(t=>t.id===state.activeToolId);
+        const drawMode = state.appState==='MEASURE' && at && ['VRD','TRANCHEE','AREA','POINT'].includes(at.type);
+        els.drawCanvas.style.cursor = state.isPanning ? 'grabbing' : (state.isEraserMode||drawMode ? 'crosshair' : 'grab');
+    } else {
+        els.canvasContainer.style.display = 'none';
+    }
+
+    els.eraserBanner.style.display = state.isEraserMode ? 'flex' : 'none';
+
+    // OVERLAY drawer
+    els.drawer.classList.toggle('open', !!(state.isDrawerOpen && state.activeTab));
+
+    // OVERLAY creator bar
+    els.creatorBar.classList.toggle('open', state.isCreatorOpen);
+    if (state.isCreatorOpen) renderCreatorBar();
+    else els.creatorBar.innerHTML = '';
+
+    renderToolbarStates();
+    renderDrawerContent();
+}
+
+function renderCreatorBar() {
+    const d = state.creatorData;
+    const tab = state.activeTab;
+    const isEdit = state.creatorMode === 'edit';
+    const typeLabel = {VRD:'VRD',TRANCHEE:'Tranchée',AREA:'Surface',POINT:'Pointage'}[tab]||'';
+    const S = 'width:1px;height:22px;background:var(--border);margin:0 3px;flex-shrink:0;';
+
+    const colorDots = COLORS.map(c=>`<div class="cr-color ${d.color===c?'sel':''}" style="background:${c}" onclick="selectCreatorColor('${c}')"></div>`).join('');
+
+    // Épaisseur → Tranchée uniquement
+    const thickHtml = tab==='TRANCHEE' ? `
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+            <span style="font-size:0.6rem;color:var(--muted);">Ép.</span>
+            <input type="range" class="cr-range" min="8" max="60" value="${d.thickness||20}"
+                   oninput="state.creatorData.thickness=+this.value;document.getElementById('thickVal').textContent=this.value+'px';" onkeydown="event.stopPropagation()"/>
+            <span id="thickVal" style="font-size:0.63rem;color:var(--amber);width:28px;font-weight:700;">${d.thickness||20}px</span>
+        </div>` : '';
+
+    // Taille icône → Pointage uniquement
+    const sizeHtml = tab==='POINT' ? `
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+            <span style="font-size:0.6rem;color:var(--muted);">Taille</span>
+            <input type="range" class="cr-range" min="6" max="28" value="${d.pointSize||12}"
+                   oninput="state.creatorData.pointSize=+this.value;document.getElementById('sizeVal').textContent=this.value+'px';" onkeydown="event.stopPropagation()"/>
+            <span id="sizeVal" style="font-size:0.63rem;color:var(--amber);width:28px;font-weight:700;">${d.pointSize||12}px</span>
+        </div>` : '';
+
+    const iconsHtml = tab==='POINT' ? `
+        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+            ${Object.entries(VRD_ICONS).map(([k,v])=>`
+                <button class="vrd-icon-btn ${d.vrdIcon===k?'sel':''}" onclick="selectVrdIcon('${k}')" title="${v.label}" style="color:${d.color};">${v.svg}</button>`).join('')}
+        </div>` : '';
+
+    const trancheeHtml = tab==='TRANCHEE' ? `
+        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
+            <span style="font-size:0.6rem;color:var(--muted);white-space:nowrap;">Largeur</span>
+            <input type="number" step="0.01" value="${d.trancheeW}" style="width:54px;" class="cr-input" oninput="state.creatorData.trancheeW=this.value" onkeydown="handleCreatorKey(event)"/>
+            <span style="font-size:0.6rem;color:var(--muted);">m &nbsp;Prof.</span>
+            <input type="number" step="0.01" value="${d.trancheeD}" style="width:54px;" class="cr-input" oninput="state.creatorData.trancheeD=this.value" onkeydown="handleCreatorKey(event)"/>
+            <span style="font-size:0.6rem;color:var(--muted);">m</span>
+        </div>` : '';
+
+    els.creatorBar.innerHTML = `
+        <span style="font-size:0.62rem;font-weight:700;color:var(--muted);letter-spacing:0.07em;text-transform:uppercase;flex-shrink:0;">${isEdit?'✍️':'+'} ${typeLabel}</span>
+        <div style="${S}"></div>
+        <input id="cr-name" class="cr-input" style="flex:1;max-width:180px;" placeholder="Nom…" value="${d.name}"
+               oninput="state.creatorData.name=this.value" onkeydown="handleCreatorKey(event)"/>
+        <div style="${S}"></div>
+        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">${colorDots}</div>
+        ${thickHtml   ? `<div style="${S}"></div>${thickHtml}`   : ''}
+        ${sizeHtml    ? `<div style="${S}"></div>${sizeHtml}`    : ''}
+        ${iconsHtml   ? `<div style="${S}"></div>${iconsHtml}`   : ''}
+        ${trancheeHtml? `<div style="${S}"></div>${trancheeHtml}`: ''}
+        <div style="${S}"></div>
+        <button class="cr-btn cr-save" onclick="saveTool()">${isEdit?'Mettre à jour':'Créer'}</button>
+        <button class="cr-btn cr-cancel" onclick="cancelCreator()">Annuler</button>
+    `;
+    setTimeout(()=>{ const i=document.getElementById('cr-name'); if(i) i.focus(); }, 40);
+}
+
+function selectCreatorColor(hex) {
+    state.creatorData.color = hex;
+    renderCreatorBar();
+}
+function selectVrdIcon(key) {
+    state.creatorData.vrdIcon = key;
+    document.querySelectorAll('.vrd-icon-btn').forEach(b=>b.classList.remove('sel'));
+    [...document.querySelectorAll('.vrd-icon-btn')].find(b=>b.title===VRD_ICONS[key].label)?.classList.add('sel');
+}
+function handleCreatorKey(e) { e.stopPropagation(); if(e.key==='Enter') saveTool(); if(e.key==='Escape') cancelCreator(); }
+function openCreator(mode, toolId=null) {
+    let d={ name:'', color:COLORS[4], thickness:20, pointSize:12, editingId:null, vrdIcon:'regard', trancheeW:'0.80', trancheeD:'1.20' };
+    if(mode==='edit'&&toolId){ const t=state.tools.find(x=>x.id===toolId); if(t) d={name:t.name,color:t.color,thickness:t.thickness||20,pointSize:t.pointSize||12,editingId:t.id,vrdIcon:t.vrdIcon||'regard',trancheeW:String(t.trancheeW||'0.80'),trancheeD:String(t.trancheeD||'1.20')}; }
+    setState({ isCreatorOpen:true, creatorMode:mode, creatorData:d });
+}
+function cancelCreator() { setState({ isCreatorOpen:false, creatorMode:null }); }
+function saveTool() {
+    const nameEl=document.getElementById('cr-name');
+    const name=(nameEl?nameEl.value:state.creatorData.name).trim();
+    if(!name){ if(nameEl) nameEl.focus(); return; }
+    const d=state.creatorData;
+    const existing=d.editingId?state.tools.find(t=>t.id===d.editingId):null;
+    const newTool={ id:d.editingId||Date.now().toString(), name, type:d.editingId?existing.type:state.activeTab,
+        color:d.color, thickness:+d.thickness, pointSize:+(d.pointSize||12), vrdIcon:d.vrdIcon,
+        trancheeW:parseFloat(d.trancheeW)||0.8, trancheeD:parseFloat(d.trancheeD)||1.2,
+        hidden: existing ? existing.hidden : false,
+        measurements:existing?existing.measurements:[] };
+    const newTools=[...state.tools]; const idx=newTools.findIndex(t=>t.id===newTool.id);
+    if(idx>=0) newTools[idx]=newTool; else newTools.push(newTool);
+    setState({ tools:newTools, activeToolId:newTool.id, isCreatorOpen:false, creatorMode:null });
+}
+
+function renderToolbarStates() {
+    ['SETUP','VRD','TRANCHEE','AREA','POINT','SUMMARY'].forEach(t=>{
+        const btn=document.getElementById('tb-'+t); if(!btn) return;
+        btn.className=(state.activeTab===t&&state.isDrawerOpen)?'tb-btn active':'tb-btn';
+        if(['VRD','TRANCHEE','AREA','POINT','SUMMARY'].includes(t)){
+            btn.style.opacity=state.pixelsPerMeter?'1':'0.3';
+            btn.style.pointerEvents=state.pixelsPerMeter?'auto':'none';
+        }
+    });
+    const eb=document.getElementById('tb-eraser'); if(eb) eb.className=state.isEraserMode?'tb-btn danger active':'tb-btn danger';
+}
+
+function renderDrawerContent() {
+    if(!state.activeTab) return;
+    const titles={SETUP:'Setup',VRD:'VRD — Linéaires',TRANCHEE:'Tranchée — Volumes',AREA:'Surfaces',POINT:'Pointage VRD',SUMMARY:'Récapitulatif'};
+    els.drawerTitle.textContent=titles[state.activeTab]||'';
+    let html='';
+    if(state.activeTab==='SETUP') html=buildSetup();
+    else if(['VRD','TRANCHEE','AREA','POINT'].includes(state.activeTab)){
+        // Barre d'actions groupe : + Ajouter / 👁 Afficher-Masquer tout
+        const typeTools = state.tools.filter(t=>t.type===state.activeTab);
+        const allHidden = typeTools.length > 0 && typeTools.every(t=>t.hidden);
+        const eyeIcon = allHidden
+            ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
+            : `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+        html += `
+        <div style="display:flex;gap:6px;">
+            <button onclick="openCreator('new')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:1.5px dashed var(--border2);border-radius:10px;padding:8px;background:transparent;color:var(--muted);font-family:inherit;font-weight:700;font-size:0.73rem;cursor:pointer;transition:all 0.12s;" onmouseover="this.style.borderColor='var(--amber-dk)';this.style.color='var(--amber)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted)'">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Ajouter
+            </button>
+            <button onclick="toggleGroupVisibility('${state.activeTab}')" title="${allHidden?'Afficher tout':'Masquer tout'}" style="width:36px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border2);border-radius:10px;background:#18181b;color:${allHidden?'var(--amber)':'var(--muted)'};cursor:pointer;transition:all 0.12s;flex-shrink:0;" onmouseover="this.style.color='var(--white)';this.style.borderColor='var(--border2)'" onmouseout="this.style.color='${allHidden?'var(--amber)':'var(--muted)'}';this.style.borderColor='var(--border2)'">
+                ${eyeIcon}
+            </button>
+        </div>`;
+        html+=buildToolList(state.activeTab);
+    } else if(state.activeTab==='SUMMARY') html=buildSummary();
+    els.drawerContent.innerHTML=html;
+}
+
+function buildSetup(){return`
+    <div style="background:var(--surface);border:1px solid ${state.appState==='UPLOAD'?'var(--amber-dk)':'var(--border)'};border-radius:13px;padding:13px;">
+        <div style="font-size:0.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:9px;">1 — Plan</div>
+        ${state.imageSrc?`<span style="color:var(--amber);font-size:0.73rem;font-weight:700;background:#1c0f00;padding:5px 10px;border-radius:7px;border:1px solid var(--amber-dk);display:inline-block;">✓ Plan chargé</span>`:`<label style="display:block;text-align:center;padding:9px;border-radius:10px;font-weight:700;font-size:0.78rem;background:var(--amber-dk);color:#000;cursor:pointer;" onmouseover="this.style.background='var(--amber)'" onmouseout="this.style.background='var(--amber-dk)'">Importer PDF / Image<input type="file" accept=".pdf,image/*" style="display:none;" onchange="handleFileUpload(event)"/></label>`}
+    </div>
+    <div style="background:var(--surface);border:1px solid ${state.appState==='SETUP_SCALE'?'var(--amber-dk)':'var(--border)'};border-radius:13px;padding:13px;">
+        <div style="font-size:0.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:9px;">2 — Échelle</div>
+        ${state.pixelsPerMeter?`<div style="color:var(--amber);font-size:0.73rem;font-weight:700;background:#1c0f00;padding:5px 10px;border-radius:7px;border:1px solid var(--amber-dk);margin-bottom:8px;">✓ 1 : ${state.scaleRatioInput}</div><button onclick="resetScale()" style="color:var(--muted);font-size:0.68rem;text-decoration:underline;background:none;border:none;cursor:pointer;font-family:inherit;">Modifier</button>`:state.appState!=='UPLOAD'?`<div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--white);font-size:0.78rem;font-weight:700;">1 :</span><input type="number" id="scaleInput" value="${state.scaleRatioInput}" class="d-input" style="width:66px;" onkeydown="event.stopPropagation()"/><button onclick="applyScaleRatio()" style="background:var(--amber-dk);color:#000;padding:6px 12px;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:0.73rem;font-family:inherit;" onmouseover="this.style.background='var(--amber)'" onmouseout="this.style.background='var(--amber-dk)'">OK</button></div>${!state.isPdf?`<div style="margin-top:8px;font-size:0.63rem;color:var(--amber);background:#1c0f00;padding:6px 10px;border-radius:7px;border:1px solid #78350f;">⚠️ Image importée — échelle approchée</div>`:''}`:` <p style="color:var(--border2);font-size:0.73rem;">Importez un plan d'abord.</p>`}
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:13px;">
+        <div style="font-size:0.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:9px;">Projet</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <button onclick="exportProjectData()" style="display:flex;align-items:center;justify-content:center;gap:5px;background:var(--amber-dk);color:#000;padding:8px;border-radius:10px;border:none;cursor:pointer;font-weight:700;font-size:0.73rem;font-family:inherit;" onmouseover="this.style.background='var(--amber)'" onmouseout="this.style.background='var(--amber-dk)'">💾 Sauver</button>
+            <label style="display:flex;align-items:center;justify-content:center;gap:5px;background:#18181b;color:var(--muted);padding:8px;border-radius:10px;border:1px solid var(--border2);cursor:pointer;font-weight:700;font-size:0.73rem;font-family:inherit;" onmouseover="this.style.background='var(--border2)';this.style.color='var(--white)'" onmouseout="this.style.background='#18181b';this.style.color='var(--muted)'">📤 Charger<input type="file" accept=".json" style="display:none;" onchange="importProjectData(event)"/></label>
         </div>
+    </div>`;}
 
-        <div class="flex-1 overflow-y-auto flex flex-col">
-            <div class="p-6 border-b border-zinc-900 bg-zinc-900/50">
-                <h1 id="drawerTitle" class="text-xl font-bold text-white">⚙️ Projet & Configuration</h1>
+function buildToolList(type){
+    const tools=state.tools.filter(t=>t.type===type);
+    if(!tools.length) return`<p style="font-size:0.7rem;color:var(--border2);text-transform:uppercase;letter-spacing:0.07em;text-align:center;padding:18px 0;">Aucun outil</p>`;
+    return`<div style="display:flex;flex-direction:column;gap:7px;" class="slide-d">`+tools.map(tool=>{
+        const isActive=state.activeToolId===tool.id;
+        const isTr=tool.type==='TRANCHEE', isPt=tool.type==='POINT', isAr=tool.type==='AREA';
+        const isHidden=!!tool.hidden;
+        const len=tool.measurements.reduce((a,p)=>a+calculateLength(p,isAr||isTr),0);
+        const area=isAr?tool.measurements.reduce((a,p)=>a+calculateArea(p),0):0;
+        const vol=isTr?len*tool.trancheeW*tool.trancheeD:0;
+        const sz=tool.pointSize||12;
+        const preview=isPt
+            ?`<div style="color:${isHidden?'var(--muted)':tool.color};opacity:${isHidden?0.35:1};transition:all 0.2s;">${VRD_ICONS[tool.vrdIcon||'regard'].svg}</div>`
+            :`<div style="width:22px;height:${Math.max(isTr?(tool.thickness||20)/3:3,2)}px;border-radius:2px;background:${tool.color};opacity:${isHidden?0.2:isTr?0.55:1};flex-shrink:0;transition:opacity 0.2s;"></div>`;
+        const eyeBtn = `<button onclick="event.stopPropagation();toggleToolVisibility('${tool.id}')" title="${isHidden?'Afficher':'Masquer'}" style="background:#18181b;border:1px solid var(--border2);border-radius:6px;padding:3px 6px;cursor:pointer;color:${isHidden?'var(--amber)':'var(--muted)'};transition:all 0.1s;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='${isHidden?'var(--amber)':'var(--muted)'}'">
+            ${isHidden
+                ? `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
+                : `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`}
+        </button>`;
+        return`<div class="tool-card ${isActive?'active':''}" style="${isHidden?'opacity:0.5;':''}" onclick="setActiveTool('${tool.id}')">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
+                <div style="display:flex;align-items:center;gap:9px;flex:1;min-width:0;">${preview}<span style="font-weight:700;font-size:0.78rem;color:${isActive?'#fff':'var(--text)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${tool.name}</span></div>
+                <div style="display:flex;gap:4px;flex-shrink:0;margin-left:6px;">
+                    ${eyeBtn}
+                    <button onclick="event.stopPropagation();openCreator('edit','${tool.id}')" style="background:#18181b;border:1px solid var(--border2);border-radius:6px;padding:3px 6px;cursor:pointer;color:var(--muted);transition:all 0.1s;" onmouseover="this.style.color='#fff';this.style.background='var(--border2)'" onmouseout="this.style.color='var(--muted)';this.style.background='#18181b'"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                    <button onclick="event.stopPropagation();deleteTool('${tool.id}')" style="background:#18181b;border:1px solid var(--border2);border-radius:6px;padding:3px 6px;cursor:pointer;color:var(--muted);transition:all 0.1s;" onmouseover="this.style.color='#ef4444';this.style.borderColor='#450a0a';this.style.background='#1f0808'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border2)';this.style.background='#18181b'"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+                </div>
             </div>
-
-            <div id="drawerContent" class="p-6 flex-1 space-y-6">
-                <!-- Rendu dynamique par JS selon l'onglet -->
+            <div style="display:flex;justify-content:space-between;align-items:center;padding-top:6px;border-top:1px solid var(--border);">
+                <span style="font-size:0.6rem;color:var(--border2);text-transform:uppercase;letter-spacing:0.07em;">${isTr?`${tool.trancheeW}m×${tool.trancheeD}m`:isPt?`${sz}px · unités`:isAr?'surface':'linéaire'}</span>
+                <div style="text-align:right;line-height:1.3;">
+                    ${isTr?`<div style="font-family:monospace;font-weight:700;color:var(--amber);font-size:0.75rem;">${vol.toFixed(2)} m³</div><div style="font-family:monospace;font-size:0.68rem;color:var(--muted);">${len.toFixed(2)} ml</div>`:''}
+                    ${isAr?`<div style="font-family:monospace;font-weight:700;color:var(--amber);font-size:0.75rem;">${area.toFixed(2)} m²</div><div style="font-family:monospace;font-size:0.68rem;color:var(--muted);">${len.toFixed(2)} ml</div>`:''}
+                    ${tool.type==='VRD'?`<div style="font-family:monospace;font-weight:700;color:var(--amber);font-size:0.75rem;">${len.toFixed(2)} ml</div>`:''}
+                    ${isPt?`<div style="font-family:monospace;font-weight:700;color:var(--amber);font-size:0.75rem;">${tool.measurements.length} u</div>`:''}
+                </div>
             </div>
+        </div>`;
+    }).join('')+'</div>';}
+
+function buildSummary(){
+    const vrd=state.tools.filter(t=>t.type==='VRD');
+    const tr=state.tools.filter(t=>t.type==='TRANCHEE');
+    const ar=state.tools.filter(t=>t.type==='AREA');
+    const pt=state.tools.filter(t=>t.type==='POINT');
+    const totalVrd=vrd.reduce((a,t)=>a+t.measurements.reduce((s,p)=>s+calculateLength(p,false),0),0);
+    const totalTr=tr.reduce((a,t)=>{ const l=t.measurements.reduce((s,p)=>s+calculateLength(p,false),0); return a+l*t.trancheeW*t.trancheeD; },0);
+    const totalAr=ar.reduce((a,t)=>a+t.measurements.reduce((s,p)=>s+calculateArea(p),0),0);
+    const totalPt=pt.reduce((a,t)=>a+t.measurements.length,0);
+    const sec=(title,rows,tot,unit)=>`
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:13px;overflow:hidden;">
+        <div style="background:#111;padding:9px 13px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:0.68rem;font-weight:700;color:#fff;">${title}</span>
+            <span style="font-family:monospace;font-size:0.72rem;font-weight:700;color:var(--amber);background:#1c0f00;padding:2px 8px;border-radius:5px;">${tot} ${unit}</span>
         </div>
-    </div>
+        <div style="padding:5px 13px;">${rows.length?rows.map(r=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);"><div style="display:flex;align-items:center;gap:7px;"><div style="width:7px;height:7px;border-radius:50%;background:${r.color};flex-shrink:0;"></div><span style="font-size:0.75rem;color:var(--text);font-weight:700;">${r.name}</span></div><span style="font-family:monospace;font-size:0.72rem;color:var(--muted);">${r.val} ${r.unit}</span></div>`).join(''):`<p style="font-size:0.65rem;color:var(--border2);padding:8px 0;">Aucune donnée</p>`}</div>
+    </div>`;
+    return`<div style="display:flex;flex-direction:column;gap:9px;">
+        ${sec('VRD — Linéaires',vrd.map(t=>({color:t.color,name:t.name,val:t.measurements.reduce((a,p)=>a+calculateLength(p,false),0).toFixed(2),unit:'ml'})),totalVrd.toFixed(2),'ml')}
+        ${sec('Tranchées — Volumes',tr.map(t=>{const l=t.measurements.reduce((a,p)=>a+calculateLength(p,false),0);return{color:t.color,name:t.name,val:(l*t.trancheeW*t.trancheeD).toFixed(2),unit:'m³'};}),totalTr.toFixed(2),'m³')}
+        ${sec('Surfaces',ar.map(t=>({color:t.color,name:t.name,val:t.measurements.reduce((a,p)=>a+calculateArea(p),0).toFixed(2),unit:'m²'})),totalAr.toFixed(2),'m²')}
+        ${sec('Pointage VRD',pt.map(t=>({color:t.color,name:t.name,val:t.measurements.length,unit:'u'})),totalPt,'u')}
+        <button onclick="generatePrintImage()" style="display:flex;align-items:center;justify-content:center;gap:7px;background:var(--amber-dk);color:#000;padding:11px;border-radius:12px;border:none;cursor:pointer;font-weight:700;font-size:0.78rem;font-family:inherit;" onmouseover="this.style.background='var(--amber)'" onmouseout="this.style.background='var(--amber-dk)'">🖨️ Imprimer le Devis</button>
+    </div>`;}
 
-    <!-- CANVAS CENTRAL ET ZONE DE NAVIGATION -->
-    <div id="workspace" class="absolute inset-0 w-full h-full overflow-hidden bg-zinc-900 z-10">
-        
-        <!-- ÉCRAN VIDE -->
-        <div id="emptyState" class="absolute inset-0 flex items-center justify-center text-zinc-600 font-medium bg-black">
-            Importez un plan depuis SETUP pour commencer
-        </div>
+// CANVAS
+function drawCanvas(){
+    if(!state.imageSrc) return;
+    ctx.clearRect(0,0,els.drawCanvas.width,els.drawCanvas.height);
+    state.tools.forEach(tool=>{ if(!tool.hidden) tool.measurements.forEach(pts=>drawShape(pts,tool,false)); });
+    if(state.currentLine.length>0&&state.appState==='MEASURE'&&!state.isEraserMode){
+        const at=state.tools.find(t=>t.id===state.activeToolId);
+        if(at) drawShape([...state.currentLine,state.mousePos],at,true);
+    }
+    if(state.isEraserMode){
+        ctx.strokeStyle='rgba(239,68,68,0.7)';ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.arc(state.mousePos.x,state.mousePos.y,14,0,2*Math.PI);ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(state.mousePos.x-4,state.mousePos.y-4);ctx.lineTo(state.mousePos.x+4,state.mousePos.y+4);
+        ctx.moveTo(state.mousePos.x+4,state.mousePos.y-4);ctx.lineTo(state.mousePos.x-4,state.mousePos.y+4);
+        ctx.stroke();
+    }
+}
 
-        <!-- LOADER -->
-        <div id="loader" class="hidden absolute inset-0 flex-col items-center justify-center bg-black/80 z-50 backdrop-blur-sm">
-            <div class="animate-spin text-6xl mb-4 text-amber-500">⚙️</div>
-            <div class="text-white font-bold text-xl animate-pulse">Traitement en cours...</div>
-            <div class="text-zinc-500 text-sm mt-2 text-center px-4">Cette opération peut prendre quelques secondes.</div>
-        </div>
+function drawShape(points,tool,isPreview){
+    if(!points.length) return;
+    const color=tool.color||'#3b82f6';
+    const thick=tool.thickness||3;
+    const type=tool.type;
+    ctx.save();
 
-        <!-- CONTENEUR MULTI-CALQUES -->
-        <div id="canvasContainer" class="hidden relative shadow-2xl origin-top-left border border-zinc-800" style="transform: translate(0px, 0px) scale(1);">
-            <img id="bgImage" alt="Plan de fond" class="absolute top-0 left-0 w-full h-full pointer-events-none" />
-            <canvas id="drawCanvas" class="absolute top-0 left-0 w-full h-full cursor-grab"></canvas>
-        </div>
-        
-        <!-- CANVAS D'IMPRESSION (CACHÉ) -->
-        <canvas id="printCanvas" class="hidden"></canvas>
-    </div>
+    if(type==='POINT'){
+        const p=points[0];
+        const r=tool.pointSize||12;
+        ctx.fillStyle=color+'cc'; ctx.strokeStyle=color; ctx.lineWidth=1.5;
+        ctx.beginPath(); ctx.arc(p.x,p.y,r,0,2*Math.PI); ctx.fill(); ctx.stroke();
+        // Symbole interne mis à l'échelle
+        const s=r*0.45;
+        ctx.strokeStyle='#fff'; ctx.lineWidth=Math.max(1,r*0.1);
+        const ik=tool.vrdIcon||'regard';
+        if(ik==='regard'){ ctx.strokeRect(p.x-s,p.y-s,s*2,s*2); }
+        else if(ik==='vanne'){ ctx.beginPath();ctx.moveTo(p.x-s,p.y-s);ctx.lineTo(p.x+s,p.y-s);ctx.lineTo(p.x+s*0.5,p.y);ctx.lineTo(p.x+s,p.y+s);ctx.lineTo(p.x-s,p.y+s);ctx.lineTo(p.x-s*0.5,p.y);ctx.closePath();ctx.stroke(); }
+        else if(ik==='bouche'){ ctx.strokeRect(p.x-s*0.6,p.y-s*0.2,s*1.2,s*1.1);ctx.strokeRect(p.x-s*0.3,p.y-s*0.8,s*0.6,s*0.6); }
+        else if(ik==='poteau'){ ctx.beginPath();ctx.moveTo(p.x,p.y+s);ctx.lineTo(p.x,p.y-s);ctx.moveTo(p.x-s*0.6,p.y-s);ctx.lineTo(p.x+s*0.6,p.y-s);ctx.stroke(); }
+        else if(ik==='lampadaire'){ ctx.beginPath();ctx.moveTo(p.x,p.y+s);ctx.lineTo(p.x,p.y-s*0.3);ctx.quadraticCurveTo(p.x,p.y-s,p.x+s*0.7,p.y-s);ctx.stroke();ctx.beginPath();ctx.arc(p.x+s*0.7,p.y-s,s*0.25,0,2*Math.PI);ctx.fillStyle='#fff';ctx.fill(); }
+        ctx.restore(); return;
+    }
 
-    <!-- SCRIPT DE LOGIQUE APPLICATIVE -->
-    <script>
-        // --- 1. CONFIGURATION & ÉTATS ---
-        const COLORS = [
-            { hex: '#ef4444', emoji: '🟥' }, { hex: '#a855f7', emoji: '🟪' }, { hex: '#3b82f6', emoji: '🟦' },
-            { hex: '#22c55e', emoji: '🟩' }, { hex: '#eab308', emoji: '🟨' }, { hex: '#f97316', emoji: '🟧' }
-        ];
+    ctx.lineCap='round'; ctx.lineJoin='round';
 
-        let state = {
-            activeTab: 'SETUP',
-            isDrawerOpen: true,
-            appState: 'UPLOAD',
-            imageSrc: null, 
-            imageObj: null, 
-            imageSize: { width: 0, height: 0 },
-            isPdf: false,
-            scaleRatioInput: '50',
-            isLoading: false,
-            pixelsPerMeter: null,
-            tools: [],
-            activeToolId: null,
-            editingTool: null, 
-            isEraserMode: false,
-            currentLine: [],
-            mousePos: { x: 0, y: 0 },
-            transform: { scale: 1, x: 0, y: 0 },
-            isPanning: false,
-            panStart: { x: 0, y: 0 }
-        };
-
-        // DOM Elements
-        const els = {
-            drawer: document.getElementById('drawer'),
-            tabsContainer: document.getElementById('tabsContainer'),
-            drawerTitle: document.getElementById('drawerTitle'),
-            drawerContent: document.getElementById('drawerContent'),
-            workspace: document.getElementById('workspace'),
-            emptyState: document.getElementById('emptyState'),
-            loader: document.getElementById('loader'),
-            canvasContainer: document.getElementById('canvasContainer'),
-            bgImage: document.getElementById('bgImage'),
-            drawCanvas: document.getElementById('drawCanvas'),
-            eraserBanner: document.getElementById('eraserBanner'),
-            zoomWidget: document.getElementById('zoomWidget'),
-            btnEraser: document.getElementById('btn-eraser'),
-            printCanvas: document.getElementById('printCanvas')
-        };
-
-        const ctx = els.drawCanvas.getContext('2d');
-
-        // --- 2. MOTEUR DE RENDU (Réactivité manuelle) ---
-        function setState(updates) {
-            Object.assign(state, updates);
-            renderDOM();
-            drawCanvas();
+    if(type==='TRANCHEE'){
+        // Surligneur large translucide
+        ctx.strokeStyle=color+(isPreview?'40':'50');
+        ctx.lineWidth=Math.max(thick*4,24);
+        ctx.setLineDash(isPreview?[18,6]:[]);
+        ctx.beginPath(); ctx.moveTo(points[0].x,points[0].y);
+        for(let i=1;i<points.length;i++) ctx.lineTo(points[i].x,points[i].y);
+        ctx.stroke();
+        // Bord fin
+        ctx.strokeStyle=color+'90'; ctx.lineWidth=1.5; ctx.setLineDash([5,4]); ctx.stroke();
+        if(!isPreview){
+            ctx.setLineDash([]); ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=1.5;
+            points.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,3,0,2*Math.PI);ctx.fill();ctx.stroke();});
         }
-
-        function renderDOM() {
-            // Loader & Empty State
-            els.loader.style.display = state.isLoading ? 'flex' : 'none';
-            els.emptyState.style.display = (!state.imageSrc && !state.isLoading) ? 'flex' : 'none';
-            
-            // Canvas Container & Image
-            if (state.imageSrc) {
-                els.canvasContainer.style.display = 'block';
-                if (els.bgImage.src !== state.imageSrc) els.bgImage.src = state.imageSrc;
-                els.canvasContainer.style.width = `${state.imageSize.width}px`;
-                els.canvasContainer.style.height = `${state.imageSize.height}px`;
-                els.drawCanvas.width = state.imageSize.width;
-                els.drawCanvas.height = state.imageSize.height;
-                els.canvasContainer.style.transform = `translate(${state.transform.x}px, ${state.transform.y}px) scale(${state.transform.scale})`;
-                
-                // Cursor
-                if (state.isPanning) els.drawCanvas.style.cursor = 'grabbing';
-                else if (state.isEraserMode) els.drawCanvas.style.cursor = 'crosshair';
-                else if (state.appState === 'MEASURE' && ['LINE', 'AREA', 'POINT'].includes(state.activeTab)) els.drawCanvas.style.cursor = 'crosshair';
-                else els.drawCanvas.style.cursor = 'grab';
-            } else {
-                els.canvasContainer.style.display = 'none';
-            }
-
-            // Eraser Banner
-            els.eraserBanner.style.display = state.isEraserMode ? 'flex' : 'none';
-            
-            // Stylisation du bouton Gomme Flottant
-            if (els.btnEraser) {
-                if (state.isEraserMode) {
-                    els.btnEraser.className = "w-12 h-12 bg-red-600 border border-red-500 rounded-xl text-white shadow-xl flex items-center justify-center transition-all mt-2 animate-pulse";
-                } else {
-                    els.btnEraser.className = "w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-red-500 hover:border-red-500 shadow-xl flex items-center justify-center transition-all mt-2";
-                }
-            }
-
-            // Zoom Widget
-            els.zoomWidget.style.display = state.imageSrc ? 'flex' : 'none';
-
-            // Drawer Transform
-            els.drawer.style.transform = state.isDrawerOpen ? 'translateX(0)' : 'translateX(-100%)';
-
-            renderTabs();
-            renderDrawerContent();
-        }
-
-        function renderTabs() {
-            const tabs = [
-                { id: 'SETUP', icon: '⚙️', title: 'Configuration' },
-                ...(state.pixelsPerMeter ? [
-                    { id: 'LINE', icon: '📏', title: 'Mètres linéaires' },
-                    { id: 'AREA', icon: '📐', title: 'Surfaces' },
-                    { id: 'POINT', icon: '🚩', title: 'Pointages' },
-                    { id: 'SUMMARY', icon: '📠', title: 'Récapitulatif' }
-                ] : [])
-            ];
-
-            els.tabsContainer.innerHTML = tabs.map(t => {
-                const isActive = state.activeTab === t.id && state.isDrawerOpen;
-                const activeClass = isActive ? 'bg-amber-600 text-white border-amber-700 hover:bg-amber-500' : 'bg-zinc-950 text-zinc-500 border-zinc-900 hover:bg-zinc-900';
-                return `<button onclick="toggleTab('${t.id}')" title="${t.title}" class="w-12 py-3 rounded-r-lg shadow-lg flex flex-col items-center justify-center transition-colors border border-l-0 ${activeClass}"><span>${t.icon}</span></button>`;
-            }).join('');
-        }
-
-        function renderDrawerContent() {
-            const titles = { SETUP: '⚙️ Projet & Configuration', LINE: '📏 Mètres linéaires', AREA: '📐 Surfaces', POINT: '🚩 Pointages', SUMMARY: '📠 Récapitulatif' };
-            els.drawerTitle.textContent = titles[state.activeTab];
-
-            let html = '';
-
-            if (state.activeTab === 'SETUP') {
-                html += `
-                <div class="p-5 rounded-2xl border ${state.appState === 'UPLOAD' ? 'border-amber-600 bg-zinc-900' : 'border-zinc-800 bg-zinc-900'}">
-                  <h2 class="font-bold text-white mb-4">1. Importer un plan</h2>
-                  ${state.imageSrc ? '<span class="text-amber-500 font-bold text-sm bg-amber-500/10 px-3 py-1.5 rounded-lg">✓ Plan chargé</span>' : `
-                    <label class="block w-full text-center py-2.5 rounded-xl font-bold text-sm transition-all ${state.isLoading ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' : 'bg-amber-600 hover:bg-amber-500 text-white cursor-pointer active:scale-95'}">
-                      ${state.isLoading ? "⏳ Chargement..." : "Importer (PDF/IMG)"}
-                      <input type="file" accept=".pdf, image/*" class="hidden" onchange="handleFileUpload(event)" ${state.isLoading ? 'disabled' : ''} />
-                    </label>
-                  `}
-                </div>`;
-
-                html += `
-                <div class="p-5 rounded-2xl border ${state.appState === 'SETUP_SCALE' ? 'border-amber-600 bg-zinc-900' : 'border-zinc-800 bg-zinc-900'}">
-                  <h2 class="font-bold text-white mb-4">2. Échelle du plan</h2>
-                  ${state.pixelsPerMeter ? `
-                    <div class="text-sm text-amber-500 font-bold bg-amber-500/10 px-3 py-2 rounded-lg">
-                      ✓ Échelle 1:${state.scaleRatioInput}<br/>
-                    </div>
-                    <button onclick="resetScale()" class="text-zinc-400 hover:text-white text-xs underline mt-3 inline-block transition-colors">Modifier l'échelle</button>
-                  ` : (state.appState !== 'UPLOAD' ? `
-                    <div class="space-y-4">
-                        <div class="flex items-center gap-3">
-                          <span class="text-sm font-bold text-white">1 :</span>
-                          <input type="number" id="scaleInput" value="${state.scaleRatioInput}" class="input-field w-20" placeholder="ex: 50"/>
-                          <button onclick="applyScaleRatio()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-1.5 rounded-xl text-sm font-bold transition-all active:scale-95">Valider</button>
-                        </div>
-                        ${!state.isPdf ? '<div class="text-[10px] text-amber-500 bg-amber-500/10 p-3 rounded-lg border border-amber-500/20 uppercase tracking-wide">⚠️ Image importée : L\'échelle mathématique pure est déconseillée.</div>' : ''}
-                    </div>
-                  ` : '')}
-                </div>`;
-
-                html += `
-                <div class="p-5 rounded-2xl border border-zinc-800 bg-zinc-900 shadow-xl mt-6">
-                   <h2 class="font-bold text-white mb-4">📁 Gestion du Projet</h2>
-                   <div class="grid grid-cols-2 gap-3">
-                     <button onclick="exportProjectData()" class="flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-500 text-white py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95">
-                       <span class="text-lg">💾</span> <span>Sauver</span>
-                     </button>
-                     <label class="flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-2.5 rounded-xl text-sm font-bold cursor-pointer transition-all active:scale-95">
-                       <span class="text-lg">📤</span> <span>Charger</span>
-                       <input type="file" accept=".json" class="hidden" onchange="importProjectData(event)" />
-                     </label>
-                   </div>
-                   <p class="text-[10px] text-zinc-500 uppercase tracking-widest mt-3 text-center">Sauvegarde image + mesures (.json)</p>
-                </div>`;
-            } 
-            else if (['LINE', 'AREA', 'POINT'].includes(state.activeTab)) {
-                const typeInfo = {
-                    LINE: { emoji: '✍️', title: 'Linéaires', tip: 'Double-clic pour terminer.', btn: 'Créer un linéaire', color: 'blue' },
-                    AREA: { emoji: '📐', title: 'Surfaces', tip: 'Ne croisez pas les lignes.', btn: 'Créer une surface', color: 'green' },
-                    POINT: { emoji: '🚩', title: 'Pointages', tip: 'Clic simple pour pointer.', btn: 'Créer un pointage', color: 'red' }
-                }[state.activeTab];
-
-                html += `
-                <div class="bg-zinc-900 border border-zinc-800 p-4 rounded-2xl text-sm text-zinc-400 shadow-sm mb-6">
-                  <strong class="block mb-2 text-white">${typeInfo.emoji} Tracé de ${typeInfo.title.toLowerCase()} :</strong>
-                  <ul class="list-disc pl-5 text-xs"><li>${typeInfo.tip}</li></ul>
-                </div>`;
-
-                if (state.editingTool) {
-                    html += buildToolEditorForm(state.activeTab);
-                } else {
-                    html += `<button onclick="startEditingTool('${state.activeTab}')" class="w-full flex items-center justify-center gap-2 border-2 border-dashed border-zinc-700 hover:border-amber-500 hover:text-amber-500 text-zinc-500 py-4 rounded-2xl transition-all font-bold mb-6">
-                        <span class="text-xl">+</span> <span>${typeInfo.btn}</span>
-                    </button>`;
-                }
-
-                html += buildToolList(state.activeTab);
-            }
-            else if (state.activeTab === 'SUMMARY') {
-                html += buildSummary();
-            }
-
-            els.drawerContent.innerHTML = html;
-        }
-
-        function buildToolEditorForm(currentType) {
-            const tool = state.editingTool;
-            const nameTitle = currentType === 'LINE' ? 'périmètre' : (currentType === 'AREA' ? 'outil de surface' : 'pointage');
-            const placeholder = currentType === 'LINE' ? 'Plinthes' : (currentType === 'AREA' ? 'Peinture plafond' : 'Prises électriques');
-            
-            let colorHtml = COLORS.map(c => {
-                const isChecked = tool.color === c.hex || (!tool.color && c.hex === '#3b82f6');
-                return `
-                <label class="cursor-pointer">
-                    <input type="radio" name="color" value="${c.hex}" ${isChecked ? 'checked' : ''} class="peer hidden" />
-                    <div class="text-xl p-1 rounded-full peer-checked:ring-2 peer-checked:ring-offset-2 peer-checked:ring-zinc-900" style="background-color: ${c.hex}20">${c.emoji}</div>
-                </label>`;
-            }).join('');
-
-            return `
-            <form onsubmit="saveTool(event)" class="bg-zinc-900 p-5 rounded-2xl border border-zinc-800 shadow-xl mb-6">
-              <h3 class="font-bold text-white mb-4">${tool.id ? '✍️ Modifier' : 'Nouveau'} ${nameTitle}</h3>
-              <input type="text" id="toolNameInput" value="${tool.name || ''}" placeholder="Nom (ex: ${placeholder})" class="input-field w-full mb-5" required />
-              <div class="flex justify-between mb-6 px-2">${colorHtml}</div>
-              <div class="flex gap-3">
-                <button type="submit" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white py-2 rounded-xl text-sm font-bold transition-all active:scale-95">Sauver</button>
-                <button type="button" onclick="cancelEditingTool()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-2 rounded-xl text-sm font-bold transition-all active:scale-95">Annuler</button>
-              </div>
-            </form>`;
-        }
-
-        function buildToolList(typeFilter) {
-            const filteredTools = state.tools.filter(t => t.type === typeFilter);
-            if (filteredTools.length === 0) return '<p class="text-sm text-zinc-600 uppercase tracking-widest text-center py-8">Aucun outil créé</p>';
-
-            return '<div class="space-y-3">' + filteredTools.map(tool => {
-                const isArea = tool.type === 'AREA';
-                const isPoint = tool.type === 'POINT';
-                const totalPerimeter = tool.measurements.reduce((acc, pts) => acc + calculateLength(pts, isArea), 0);
-                const totalArea = isArea ? tool.measurements.reduce((acc, pts) => acc + calculateArea(pts), 0) : 0;
-                const isActive = state.activeToolId === tool.id;
-                const borderClass = isActive ? 'border-amber-600 shadow-lg bg-zinc-900' : 'border-zinc-800 bg-zinc-950 hover:border-zinc-700';
-                
-                return `
-                <div class="p-4 border rounded-2xl flex flex-col transition-all cursor-pointer ${borderClass}" onclick="setActiveTool('${tool.id}')">
-                  <div class="flex justify-between items-center mb-3">
-                    <div class="flex items-center gap-3 flex-1">
-                      <div class="w-4 h-4 rounded-full shadow-inner" style="background-color: ${tool.color}; box-shadow: 0 0 10px ${tool.color}80"></div>
-                      <span class="font-bold text-sm ${isActive ? 'text-white' : 'text-zinc-300'}">${tool.name}</span>
-                    </div>
-                    <div class="flex gap-2">
-                      <button onclick="event.stopPropagation(); editTool('${tool.id}')" class="text-zinc-500 hover:text-white transition-colors bg-zinc-800 hover:bg-zinc-700 p-1.5 rounded-lg">✍️</button>
-                      <button onclick="event.stopPropagation(); deleteTool('${tool.id}')" class="text-zinc-500 hover:text-red-500 transition-colors bg-zinc-800 hover:bg-zinc-700 p-1.5 rounded-lg">❌</button>
-                    </div>
-                  </div>
-                  <div class="flex justify-between items-end text-xs pt-3 border-t border-zinc-800/50">
-                      <span class="text-zinc-500 uppercase tracking-wider text-[9px]">${isArea ? 'Surface & Contour' : (isPoint ? 'Unités' : 'Mètres linéaires')}</span>
-                      <div class="text-right">
-                          ${isArea ? `<div class="font-mono font-bold text-amber-500 text-sm">${totalArea.toFixed(2)} m²</div>` : ''}
-                          ${!isPoint ? `<div class="font-mono font-bold text-sm ${isArea ? 'text-zinc-500' : 'text-amber-500'}">${totalPerimeter.toFixed(2)} ml</div>` : ''}
-                          ${isPoint ? `<div class="font-mono font-bold text-amber-500 text-sm">${tool.measurements.length} u</div>` : ''}
-                      </div>
-                  </div>
-                </div>`;
-            }).join('') + '</div>';
-        }
-
-        function buildSummary() {
-            let html = '<div class="space-y-6">';
-            
-            const lineTools = state.tools.filter(t => t.type === 'LINE');
-            const totalLines = lineTools.reduce((acc, t) => acc + t.measurements.reduce((sum, pts) => sum + calculateLength(pts, false), 0), 0);
-            html += `
-            <div class="bg-zinc-950 border border-zinc-900 rounded-2xl overflow-hidden shadow-xl">
-                <div class="bg-zinc-900 p-4 border-b border-zinc-800 flex justify-between items-center">
-                <h3 class="font-bold text-white text-sm">📏 Mètres linéaires</h3>
-                <span class="text-sm font-mono font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded-md">${totalLines.toFixed(2)} ml</span>
-                </div>
-                <div class="p-4 space-y-3">
-                ${lineTools.length === 0 ? '<span class="text-[10px] text-zinc-600 uppercase tracking-widest">Aucune donnée</span>' : lineTools.map(t => `
-                    <div class="flex justify-between items-center text-sm border-b border-zinc-800/50 pb-2">
-                        <div class="flex items-center gap-3"><div class="w-3 h-3 rounded-full" style="background-color: ${t.color}"></div><span class="text-zinc-300 font-bold">${t.name}</span></div>
-                        <span class="font-mono text-zinc-400">${t.measurements.reduce((acc, pts) => acc + calculateLength(pts, false), 0).toFixed(2)} ml</span>
-                    </div>`).join('')}
-                </div>
-            </div>`;
-
-            const areaTools = state.tools.filter(t => t.type === 'AREA');
-            const totalAreas = areaTools.reduce((acc, t) => acc + t.measurements.reduce((sum, pts) => sum + calculateArea(pts), 0), 0);
-            html += `
-            <div class="bg-zinc-950 border border-zinc-900 rounded-2xl overflow-hidden shadow-xl">
-                <div class="bg-zinc-900 p-4 border-b border-zinc-800 flex justify-between items-center">
-                <h3 class="font-bold text-white text-sm">📐 Surfaces (m²)</h3>
-                <span class="text-sm font-mono font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded-md">${totalAreas.toFixed(2)} m²</span>
-                </div>
-                <div class="p-4 space-y-4">
-                ${areaTools.length === 0 ? '<span class="text-[10px] text-zinc-600 uppercase tracking-widest">Aucune donnée</span>' : areaTools.map(t => `
-                    <div class="flex flex-col text-sm border-b border-zinc-800/50 pb-3">
-                        <div class="flex justify-between items-center mb-2">
-                        <div class="flex items-center gap-3"><div class="w-3 h-3 rounded-full" style="background-color: ${t.color}"></div><span class="text-zinc-300 font-bold">${t.name}</span></div>
-                        <span class="font-mono font-bold text-amber-500">${t.measurements.reduce((acc, pts) => acc + calculateArea(pts), 0).toFixed(2)} m²</span>
-                        </div>
-                        <div class="flex justify-between items-center text-[10px] uppercase tracking-widest text-zinc-500 pl-6"><span>Contour :</span><span class="font-mono text-zinc-400">${t.measurements.reduce((acc, pts) => acc + calculateLength(pts, true), 0).toFixed(2)} ml</span></div>
-                    </div>`).join('')}
-                </div>
-            </div>`;
-
-            const pointTools = state.tools.filter(t => t.type === 'POINT');
-            const totalPoints = pointTools.reduce((acc, t) => acc + t.measurements.length, 0);
-            html += `
-            <div class="bg-zinc-950 border border-zinc-900 rounded-2xl overflow-hidden shadow-xl">
-                <div class="bg-zinc-900 p-4 border-b border-zinc-800 flex justify-between items-center">
-                <h3 class="font-bold text-white text-sm">🚩 Unités</h3>
-                <span class="text-sm font-mono font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded-md">${totalPoints} u</span>
-                </div>
-                <div class="p-4 space-y-3">
-                ${pointTools.length === 0 ? '<span class="text-[10px] text-zinc-600 uppercase tracking-widest">Aucune donnée</span>' : pointTools.map(t => `
-                    <div class="flex justify-between items-center text-sm border-b border-zinc-800/50 pb-2">
-                        <div class="flex items-center gap-3"><div class="w-3 h-3 rounded-full" style="background-color: ${t.color}"></div><span class="text-zinc-300 font-bold">${t.name}</span></div>
-                        <span class="font-mono font-bold text-zinc-400">${t.measurements.length} u</span>
-                    </div>`).join('')}
-                </div>
-            </div></div>`;
-
-            // Bouton d'impression
-            html += `
-            <div class="pt-4 border-t border-zinc-800">
-                <button onclick="generatePrintImage()" class="w-full flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-500 text-white py-3 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg">
-                    <span class="text-lg">🖨️</span> Imprimer le Devis
-                </button>
-            </div>`;
-
-            return html;
-        }
-
-        function drawCanvas() {
-            if (!state.imageSrc) return;
-            ctx.clearRect(0, 0, els.drawCanvas.width, els.drawCanvas.height);
-
-            const drawShape = (points, color, type, isPreview = false) => {
-                if (points.length === 0) return;
-                const safeColor = color || '#3b82f6';
-                
-                if (type === 'POINT') {
-                    ctx.fillStyle = safeColor;
-                    ctx.beginPath();
-                    ctx.arc(points[0].x, points[0].y, 6, 0, 2 * Math.PI);
-                    ctx.fill();
-                    ctx.strokeStyle = 'white';
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-                    return;
-                }
-                
-                ctx.beginPath();
-                ctx.moveTo(points[0].x, points[0].y);
-                for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
-                
-                if (type === 'AREA' && (points.length >= 3 || isPreview)) {
-                    ctx.closePath();
-                    if (!isPreview) {
-                        ctx.fillStyle = safeColor + '40'; 
-                        ctx.fill();
-                    }
-                }
-
-                ctx.strokeStyle = safeColor;
-                ctx.lineWidth = 3;
-                if (isPreview) ctx.setLineDash([5, 5]);
-                else ctx.setLineDash([]);
-                ctx.stroke();
-
-                ctx.fillStyle = 'white';
-                ctx.setLineDash([]);
-                points.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, 2 * Math.PI); ctx.fill(); ctx.stroke(); });
-            };
-
-            state.tools.forEach(tool => {
-                tool.measurements.forEach(pts => drawShape(pts, tool.color, tool.type));
-            });
-
-            if (state.currentLine.length > 0 && state.appState === 'MEASURE' && !state.isEraserMode) {
-                const activeTool = state.tools.find(t => t.id === state.activeToolId);
-                const tempPoints = [...state.currentLine, state.mousePos];
-                drawShape(tempPoints, activeTool ? activeTool.color : '#000', activeTool ? activeTool.type : 'LINE', true);
-            }
-
-            if (state.isEraserMode) {
-                ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.arc(state.mousePos.x, state.mousePos.y, 15, 0, 2 * Math.PI);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(state.mousePos.x - 5, state.mousePos.y - 5); ctx.lineTo(state.mousePos.x + 5, state.mousePos.y + 5);
-                ctx.moveTo(state.mousePos.x + 5, state.mousePos.y - 5); ctx.lineTo(state.mousePos.x - 5, state.mousePos.y + 5);
-                ctx.stroke();
-            }
-        }
-
-        // --- 3. LOGIQUE GLOBALE (UI Actions) ---
-        function toggleTab(tabName) {
-            if (state.activeTab === tabName && state.isDrawerOpen) {
-                setState({ isDrawerOpen: false });
-            } else {
-                let updates = { activeTab: tabName, isDrawerOpen: true };
-                if (state.isEraserMode) updates.isEraserMode = false;
-                
-                if (['LINE', 'AREA', 'POINT'].includes(tabName)) {
-                    const typedTools = state.tools.filter(t => t.type === tabName);
-                    if (!typedTools.find(t => t.id === state.activeToolId)) {
-                        updates.activeToolId = typedTools.length > 0 ? typedTools[0].id : null;
-                    }
-                }
-                setState(updates);
-            }
-        }
-
-        function toggleEraser() { setState({ isEraserMode: !state.isEraserMode }); }
-        function resetScale() { setState({ pixelsPerMeter: null, appState: 'SETUP_SCALE' }); }
-        function setActiveTool(id) { setState({ activeToolId: id }); }
-        
-        function startEditingTool(type) { setState({ editingTool: { type: type, color: '#3b82f6' } }); }
-        function cancelEditingTool() { setState({ editingTool: null }); }
-        
-        function editTool(id) { setState({ editingTool: state.tools.find(t => t.id === id) }); }
-        function deleteTool(id) {
-            if(confirm("Supprimer cet outil et toutes ses mesures ?")) {
-                const newTools = state.tools.filter(t => t.id !== id);
-                let updates = { tools: newTools };
-                if (state.activeToolId === id) {
-                    const remaining = newTools.filter(t => t.type === state.activeTab);
-                    updates.activeToolId = remaining.length > 0 ? remaining[0].id : null;
-                }
-                setState(updates);
-            }
-        }
-
-        function saveTool(e) {
-            e.preventDefault();
-            const nameInput = document.getElementById('toolNameInput').value;
-            const colorRadio = document.querySelector('input[name="color"]:checked');
-            const selectedColor = colorRadio ? colorRadio.value : '#3b82f6';
-            const inferredType = state.activeTab;
-            
-            const newTool = {
-                id: state.editingTool.id || Date.now().toString(),
-                name: nameInput || 'Nouvel outil',
-                type: state.editingTool.id ? state.editingTool.type : inferredType,
-                color: selectedColor,
-                measurements: state.editingTool.measurements || []
-            };
-
-            const newTools = [...state.tools];
-            const existingIdx = newTools.findIndex(t => t.id === newTool.id);
-            if (existingIdx >= 0) newTools[existingIdx] = newTool;
-            else newTools.push(newTool);
-
-            setState({ tools: newTools, activeToolId: newTool.id, editingTool: null });
-        }
-
-        // --- 4. IMPORT/EXPORT (Fichiers & PDF) ---
-        async function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            setState({ isLoading: true });
-            
-            try {
-                if (file.type === 'application/pdf') {
-                    if (!window.pdfjsLib) {
-                        const script = document.createElement('script');
-                        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-                        await new Promise((res, rej) => { script.onload = res; script.onerror = rej; document.head.appendChild(script); });
-                        window.pdfjsLib = window['pdfjs-dist/build/pdf'];
-                        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-                    }
-                    const arrayBuffer = await file.arrayBuffer();
-                    const pdf = await window.pdfjsLib.getDocument(arrayBuffer).promise;
-                    const page = await pdf.getPage(1);
-                    const viewport = page.getViewport({ scale: 2.5 });
-                    const canvas = document.createElement('canvas');
-                    canvas.width = viewport.width; canvas.height = viewport.height;
-                    await page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
-                    loadImageFromUrl(canvas.toDataURL('image/png'), true);
-                } else if (file.type.startsWith('image/')) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => loadImageFromUrl(e.target.result, false);
-                    reader.readAsDataURL(file);
-                }
-            } catch (error) {
-                console.error(error); alert("Erreur de chargement."); setState({ isLoading: false });
-            }
-        }
-
-        function loadImageFromUrl(url, isPdf) {
-            const img = new Image();
-            img.onload = () => {
-                setState({ 
-                    imageSrc: url, imageObj: img, imageSize: { width: img.width, height: img.height },
-                    isPdf: isPdf, appState: 'SETUP_SCALE', isLoading: false, transform: { scale: 1, x: 0, y: 0 }
-                });
-            };
-            img.src = url;
-        }
-
-        function applyScaleRatio() {
-            const inputEl = document.getElementById('scaleInput');
-            if (inputEl) state.scaleRatioInput = inputEl.value;
-
-            const s = parseFloat(state.scaleRatioInput);
-            if (isNaN(s) || s <= 0) return alert("Échelle invalide.");
-            const pxPerMeter = (1000 * 72 * 2.5) / (25.4 * s);
-            setState({ pixelsPerMeter: pxPerMeter, appState: 'MEASURE' });
-            toggleTab('LINE');
-        }
-
-        function exportProjectData() {
-            if (!state.imageSrc) return alert("Aucun projet.");
-            setState({ isLoading: true });
-            setTimeout(() => {
-                const data = { version: "1.0", imageBase64: state.imageSrc, isPdf: state.isPdf, scaleRatioInput: state.scaleRatioInput, pixelsPerMeter: state.pixelsPerMeter, tools: state.tools, appState: state.appState };
-                const a = document.createElement('a');
-                a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
-                a.download = "projet_metre.json";
-                a.click();
-                setState({ isLoading: false });
-            }, 100);
-        }
-
-        function importProjectData(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            setState({ isLoading: true });
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    
-                    // Chargement asynchrone sécurisé de l'image de sauvegarde
-                    const img = new Image();
-                    img.onload = () => {
-                        setState({
-                            imageSrc: data.imageBase64,
-                            imageObj: img,
-                            imageSize: { width: img.width, height: img.height },
-                            isPdf: data.isPdf,
-                            scaleRatioInput: data.scaleRatioInput,
-                            pixelsPerMeter: data.pixelsPerMeter,
-                            tools: data.tools || [],
-                            appState: data.appState || 'MEASURE', // Restaure l'état déverrouillé de dessin
-                            isLoading: false,
-                            transform: { scale: 1, x: 0, y: 0 }
-                        });
-                        toggleTab('SUMMARY');
-                    };
-                    img.onerror = () => {
-                        alert("Erreur lors du chargement de l'image sauvegardée.");
-                        setState({ isLoading: false });
-                    };
-                    img.src = data.imageBase64;
-                    
-                } catch (err) { 
-                    alert("Fichier corrompu ou format incorrect."); 
-                    setState({ isLoading: false }); 
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        // --- 5. MATHÉMATIQUES & COLLISION ---
-        const getDistance = (p1, p2) => Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
-        const calculateLength = (pts, closed) => {
-            if (pts.length < 2 || !state.pixelsPerMeter) return 0;
-            let l = 0; for (let i=1; i<pts.length; i++) l += getDistance(pts[i-1], pts[i]);
-            if (closed && pts.length > 2) l += getDistance(pts[pts.length-1], pts[0]);
-            return l / state.pixelsPerMeter;
-        };
-        const calculateArea = (pts) => {
-            if (pts.length < 3 || !state.pixelsPerMeter) return 0;
-            let a = 0;
-            for (let i=0; i<pts.length; i++) { let j=(i+1)%pts.length; a += pts[i].x*pts[j].y - pts[j].x*pts[i].y; }
-            return (Math.abs(a)/2) / Math.pow(state.pixelsPerMeter, 2);
-        };
-        const distToSegment = (p, v, w) => {
-            const l2 = Math.pow(w.x - v.x, 2) + Math.pow(w.y - v.y, 2);
-            if (l2 === 0) return getDistance(p, v);
-            let t = Math.max(0, Math.min(1, ((p.x - v.x)*(w.x - v.x) + (p.y - v.y)*(w.y - v.y)) / l2));
-            return getDistance(p, { x: v.x + t*(w.x - v.x), y: v.y + t*(w.y - v.y) });
-        };
-
-        // --- GÉNÉRATION D'IMPRESSION (DEVIS) ---
-        function generatePrintImage() {
-            const canvas = els.printCanvas;
-            const ctx = canvas.getContext('2d');
-            const padding = 50;
-            const rowHeight = 35;
-
-            // Configuration des dimensions
-            canvas.width = 800;
-            canvas.height = 200 + (state.tools.length * rowHeight) + 100;
-
-            // FOND BLANC (Optimisation d'encre pour l'impression physique)
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // EN-TÊTE
-            ctx.fillStyle = '#000000';
-            ctx.font = 'bold 24px sans-serif';
-            ctx.fillText('RÉCAPITULATIF DE MÉTRÉ (DEVIS)', padding, 60);
-
-            ctx.font = '14px sans-serif';
-            ctx.fillStyle = '#666666';
-            ctx.fillText('Généré le ' + new Date().toLocaleString('fr-FR'), padding, 90);
-
-            // EN-TÊTE DU TABLEAU
-            ctx.fillStyle = '#000000';
-            ctx.font = 'bold 12px sans-serif';
-            ctx.fillText('DÉSIGNATION', padding, 140);
-            ctx.textAlign = 'right';
-            ctx.fillText('TOTAL NET', 550, 140);
-            ctx.fillText('TOTAL MAJORÉ (+10%)', 750, 140);
-
-            ctx.beginPath();
-            ctx.moveTo(padding, 150);
-            ctx.lineTo(750, 150);
-            ctx.strokeStyle = '#EEEEEE';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            // LIGNES DE DEVIS
-            ctx.textAlign = 'left';
-            let y = 180;
-            
-            if (state.tools.length === 0) {
-                ctx.font = 'italic 14px sans-serif';
-                ctx.fillStyle = '#999999';
-                ctx.fillText("Aucune donnée enregistrée.", padding, y);
-            } else {
-                state.tools.forEach((tool, index) => {
-                    let net = 0;
-                    let unit = '';
-                    
-                    if (tool.type === 'LINE') {
-                        net = tool.measurements.reduce((acc, pts) => acc + calculateLength(pts, false), 0);
-                        unit = 'ml';
-                    } else if (tool.type === 'AREA') {
-                        net = tool.measurements.reduce((acc, pts) => acc + calculateArea(pts), 0);
-                        unit = 'm²';
-                    } else if (tool.type === 'POINT') {
-                        net = tool.measurements.length;
-                        unit = 'u';
-                    }
-
-                    let maj = net * 1.10; // Majoration 10%
-
-                    // Ligne zébrée pour la lisibilité
-                    if (index % 2 === 0) {
-                        ctx.fillStyle = '#F9F9F9';
-                        ctx.fillRect(padding - 10, y - 22, 750 - padding + 20, rowHeight);
-                    }
-
-                    ctx.fillStyle = '#000000';
-                    ctx.font = 'bold 14px sans-serif';
-                    ctx.textAlign = 'left';
-                    const icon = tool.type === 'LINE' ? '📏 ' : (tool.type === 'AREA' ? '📐 ' : '🚩 ');
-                    ctx.fillText(icon + tool.name, padding, y);
-
-                    ctx.textAlign = 'right';
-                    ctx.font = '14px monospace';
-                    ctx.fillStyle = '#444444';
-                    ctx.fillText(net.toFixed(2) + ' ' + unit, 550, y);
-
-                    ctx.font = 'bold 14px monospace';
-                    ctx.fillStyle = '#D97706'; // Accent ambré
-                    ctx.fillText(maj.toFixed(2) + ' ' + unit, 750, y);
-
-                    y += rowHeight;
-                });
-            }
-
-            // EXPORT PNG
-            const link = document.createElement('a');
-            link.download = `Devis_Metre_${new Date().toISOString().slice(0,10)}.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-        }
-
-        // --- 6. GESTION SOURIS & CANVAS ---
-        function getCanvasCoords(e) {
-            const rect = els.drawCanvas.getBoundingClientRect();
-            return { x: (e.clientX - rect.left) * (els.drawCanvas.width / rect.width), y: (e.clientY - rect.top) * (els.drawCanvas.height / rect.height) };
-        }
-
-        // Gestion du Plein Écran (Multi-navigateurs)
-        function toggleFullScreen() {
-            const elem = document.documentElement;
-            const isFs = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-            
-            if (!isFs) {
-                // Entrer en plein écran
-                if (elem.requestFullscreen) {
-                    elem.requestFullscreen().catch(err => {
-                        alert("Le plein écran est bloqué par l'environnement actuel (ex: fenêtre intégrée/iFrame). Veuillez ouvrir le fichier .html directement dans un nouvel onglet de votre navigateur.");
-                    });
-                } else if (elem.webkitRequestFullscreen) { /* Safari */
-                    elem.webkitRequestFullscreen();
-                } else if (elem.msRequestFullscreen) { /* IE11 */
-                    elem.msRequestFullscreen();
-                } else if (elem.mozRequestFullScreen) { /* Firefox */
-                    elem.mozRequestFullScreen();
-                } else {
-                    alert("Votre navigateur ne supporte pas le mode plein écran.");
-                }
-            } else {
-                // Quitter le plein écran
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) {
-                    document.webkitExitFullscreen();
-                } else if (document.msExitFullscreen) {
-                    document.msExitFullscreen();
-                } else if (document.mozCancelFullScreen) {
-                    document.mozCancelFullScreen();
-                }
-            }
-        }
-
-        // Synchronisation multi-navigateurs de l'icône
-        function updateFsIcon() {
-            const icon = document.getElementById('icon-fullscreen');
-            if (icon) {
-                const isFs = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-                icon.textContent = isFs ? '🗗' : '⛶';
-            }
-        }
-
-        document.addEventListener('fullscreenchange', updateFsIcon);
-        document.addEventListener('webkitfullscreenchange', updateFsIcon);
-        document.addEventListener('mozfullscreenchange', updateFsIcon);
-        document.addEventListener('MSFullscreenChange', updateFsIcon);
-
-        function handleButtonZoom(zoomFactor) {
-            if (!state.imageSrc) return;
-            const newScale = Math.min(Math.max(0.1, state.transform.scale * zoomFactor), 20);
-            
-            const rect = els.workspace.getBoundingClientRect();
-            const centerX = rect.width / 2;
-            const centerY = rect.height / 2;
-            
-            const scaleRatio = newScale / state.transform.scale;
-            const newX = centerX - (centerX - state.transform.x) * scaleRatio;
-            const newY = centerY - (centerY - state.transform.y) * scaleRatio;
-
-            setState({ transform: { scale: newScale, x: newX, y: newY } });
-        }
-
-        els.workspace.addEventListener('wheel', e => {
-            if (!state.imageSrc) return;
-            const delta = -e.deltaY * 0.0015;
-            const newScale = Math.min(Math.max(0.1, state.transform.scale * Math.exp(delta)), 20);
-            const rect = els.workspace.getBoundingClientRect();
-            const ratio = newScale / state.transform.scale;
-            setState({ transform: { scale: newScale, x: (e.clientX - rect.left) - ((e.clientX - rect.left) - state.transform.x)*ratio, y: (e.clientY - rect.top) - ((e.clientY - rect.top) - state.transform.y)*ratio } });
-        });
-
-        els.workspace.addEventListener('pointerdown', e => {
-            if (e.button === 1 || (e.button === 0 && e.altKey)) {
-                e.preventDefault();
-                setState({ isPanning: true, panStart: { x: e.clientX - state.transform.x, y: e.clientY - state.transform.y } });
-            }
-        });
-
-        els.workspace.addEventListener('pointermove', e => {
-            if (state.isPanning) setState({ transform: { ...state.transform, x: e.clientX - state.panStart.x, y: e.clientY - state.panStart.y } });
-            else if (state.imageSrc) setState({ mousePos: getCanvasCoords(e) });
-        });
-
-        els.workspace.addEventListener('pointerup', () => { if(state.isPanning) setState({ isPanning: false }); });
-        els.workspace.addEventListener('pointerleave', () => { if(state.isPanning) setState({ isPanning: false }); });
-
-        els.drawCanvas.addEventListener('click', e => {
-            if (e.button !== 0 || state.isPanning || e.altKey) return;
-            const point = getCanvasCoords(e);
-
-            if (state.isEraserMode) {
-                let hit = false, newTools = [...state.tools];
-                for (let t = newTools.length-1; t>=0 && !hit; t--) {
-                    let meas = [...newTools[t].measurements];
-                    for (let m = meas.length-1; m>=0; m--) {
-                        let pts = meas[m], isHit = false;
-                        if (newTools[t].type === 'POINT') { if (pts.length && getDistance(point, pts[0])<=15) isHit=true; }
-                        else {
-                            for (let i=0; i<pts.length-1; i++) if (distToSegment(point, pts[i], pts[i+1])<=15) isHit=true;
-                            if (newTools[t].type==='AREA' && pts.length>=3 && distToSegment(point, pts[pts.length-1], pts[0])<=15) isHit=true;
-                        }
-                        if (isHit) { meas.splice(m, 1); newTools[t] = {...newTools[t], measurements: meas}; hit = true; break; }
-                    }
-                }
-                if (hit) setState({ tools: newTools });
-                return;
-            }
-
-            if (state.appState === 'MEASURE' && ['LINE','AREA','POINT'].includes(state.activeTab)) {
-                if (!state.activeToolId) return alert("Veuillez sélectionner un outil."), setState({isDrawerOpen: true});
-                if (state.activeTab === 'POINT') {
-                    const newTools = state.tools.map(t => t.id === state.activeToolId ? {...t, measurements: [...t.measurements, [point]]} : t);
-                    setState({tools: newTools}); return;
-                }
-                let updates = { currentLine: [...state.currentLine, point] };
-                if (state.currentLine.length === 0) updates.isDrawerOpen = false;
-                setState(updates);
-            }
-        });
-
-        const finishLine = (e) => {
-            if(e) e.preventDefault();
-            if(state.isEraserMode) return;
-            const tool = state.tools.find(t => t.id === state.activeToolId);
-            if (!tool) return;
-            const min = tool.type === 'AREA' ? 3 : 2;
-            if (state.currentLine.length >= min) {
-                const newTools = state.tools.map(t => t.id === state.activeToolId ? {...t, measurements: [...t.measurements, state.currentLine]} : t);
-                setState({ tools: newTools, currentLine: [], isDrawerOpen: true });
-            } else if (state.currentLine.length > 0) alert(`Il faut ${min} points minimum.`);
-        };
-
-        els.drawCanvas.addEventListener('contextmenu', finishLine);
-        els.drawCanvas.addEventListener('dblclick', finishLine);
-
-        window.addEventListener('keydown', e => {
-            if (e.key === 'Escape') setState({ currentLine: [], isDrawerOpen: true, isEraserMode: false });
-            if (e.key === 'Backspace' && !state.isEraserMode) setState({ currentLine: state.currentLine.slice(0, -1) });
-            if (e.key === 'Enter' && !state.isEraserMode) finishLine();
-        });
-
-        // Initialize Render
-        renderDOM();
-    </script>
+        ctx.restore(); return;
+    }
+
+    ctx.beginPath(); ctx.moveTo(points[0].x,points[0].y);
+    for(let i=1;i<points.length;i++) ctx.lineTo(points[i].x,points[i].y);
+    if(type==='AREA'&&points.length>=3){
+        ctx.closePath();
+        if(!isPreview){ctx.fillStyle=color+'30';ctx.fill();}
+    }
+    ctx.strokeStyle=color; ctx.lineWidth=thick;
+    ctx.setLineDash(isPreview?[7,4]:[]);
+    ctx.stroke(); ctx.setLineDash([]);
+    if(!isPreview){
+        ctx.fillStyle='#fff'; ctx.strokeStyle=color; ctx.lineWidth=1.5;
+        points.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,3.5,0,2*Math.PI);ctx.fill();ctx.stroke();});
+    }
+    ctx.restore();
+}
+
+// ACTIONS
+function toggleTab(tabName){
+    if(['VRD','TRANCHEE','AREA','POINT','SUMMARY'].includes(tabName)&&!state.pixelsPerMeter) return;
+    if(state.activeTab===tabName&&state.isDrawerOpen){ setState({isDrawerOpen:false}); return; }
+    let upd={activeTab:tabName,isDrawerOpen:true};
+    if(state.isEraserMode) upd.isEraserMode=false;
+    if(state.isCreatorOpen&&tabName!==state.activeTab) upd.isCreatorOpen=false;
+    if(['VRD','TRANCHEE','AREA','POINT'].includes(tabName)){
+        const typed=state.tools.filter(t=>t.type===tabName);
+        if(!typed.find(t=>t.id===state.activeToolId)) upd.activeToolId=typed.length?typed[0].id:null;
+    }
+    setState(upd);
+}
+function toggleToolVisibility(id){
+    const newTools=state.tools.map(t=>t.id===id?{...t,hidden:!t.hidden}:t);
+    setState({tools:newTools});
+}
+function toggleGroupVisibility(type){
+    const tools=state.tools.filter(t=>t.type===type);
+    const allHidden=tools.every(t=>t.hidden);
+    const newTools=state.tools.map(t=>t.type===type?{...t,hidden:!allHidden}:t);
+    setState({tools:newTools});
+}
+function closeDrawer(){ setState({isDrawerOpen:false}); }
+function toggleEraser(){ setState({isEraserMode:!state.isEraserMode}); }
+function resetScale(){ setState({pixelsPerMeter:null,appState:'SETUP_SCALE'}); }
+function setActiveTool(id){ setState({activeToolId:id}); }
+function deleteTool(id){
+    if(!confirm("Supprimer cet outil et toutes ses mesures ?")) return;
+    const newTools=state.tools.filter(t=>t.id!==id); let upd={tools:newTools};
+    if(state.activeToolId===id){const rem=newTools.filter(t=>t.type===state.activeTab);upd.activeToolId=rem.length?rem[0].id:null;}
+    setState(upd);
+}
+
+// IMPORT/EXPORT
+async function handleFileUpload(event){
+    const file=event.target.files[0]; if(!file) return; setState({isLoading:true});
+    try{
+        if(file.type==='application/pdf'){
+            if(!window.pdfjsLib){const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';await new Promise((r,j)=>{s.onload=r;s.onerror=j;document.head.appendChild(s);});window.pdfjsLib=window['pdfjs-dist/build/pdf'];window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}
+            const buf=await file.arrayBuffer();const pdf=await window.pdfjsLib.getDocument(buf).promise;const page=await pdf.getPage(1);const vp=page.getViewport({scale:2.5});const c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;await page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;loadImageFromUrl(c.toDataURL('image/png'),true);
+        } else {const reader=new FileReader();reader.onload=e=>loadImageFromUrl(e.target.result,false);reader.readAsDataURL(file);}
+    } catch(e){console.error(e);alert("Erreur de chargement.");setState({isLoading:false});}
+}
+function loadImageFromUrl(url,isPdf){const img=new Image();img.onload=()=>setState({imageSrc:url,imageObj:img,imageSize:{w:img.width,h:img.height},isPdf,appState:'SETUP_SCALE',isLoading:false,transform:{scale:1,x:0,y:0}});img.src=url;}
+function applyScaleRatio(){const el=document.getElementById('scaleInput');if(el)state.scaleRatioInput=el.value;const s=parseFloat(state.scaleRatioInput);if(isNaN(s)||s<=0)return alert("Échelle invalide.");setState({pixelsPerMeter:(1000*72*2.5)/(25.4*s),appState:'MEASURE'});toggleTab('VRD');}
+function exportProjectData(){if(!state.imageSrc)return alert("Aucun projet.");setState({isLoading:true});setTimeout(()=>{const d={version:"2.0",imageBase64:state.imageSrc,isPdf:state.isPdf,scaleRatioInput:state.scaleRatioInput,pixelsPerMeter:state.pixelsPerMeter,tools:state.tools,appState:state.appState};const a=document.createElement('a');a.href="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(d));a.download="mapulator_projet.json";a.click();setState({isLoading:false});},100);}
+function importProjectData(event){const file=event.target.files[0];if(!file)return;setState({isLoading:true});const reader=new FileReader();reader.onload=e=>{try{const d=JSON.parse(e.target.result);const img=new Image();img.onload=()=>{setState({imageSrc:d.imageBase64,imageObj:img,imageSize:{w:img.width,h:img.height},isPdf:d.isPdf,scaleRatioInput:d.scaleRatioInput,pixelsPerMeter:d.pixelsPerMeter,tools:d.tools||[],appState:d.appState||'MEASURE',isLoading:false,transform:{scale:1,x:0,y:0}});toggleTab('SUMMARY');};img.onerror=()=>{alert("Erreur image.");setState({isLoading:false});};img.src=d.imageBase64;}catch{alert("Fichier invalide.");setState({isLoading:false});}};reader.readAsText(file);}
+
+// MATHS
+const dist=(a,b)=>Math.sqrt((b.x-a.x)**2+(b.y-a.y)**2);
+const calculateLength=(pts,closed)=>{if(pts.length<2||!state.pixelsPerMeter)return 0;let l=0;for(let i=1;i<pts.length;i++)l+=dist(pts[i-1],pts[i]);if(closed&&pts.length>2)l+=dist(pts[pts.length-1],pts[0]);return l/state.pixelsPerMeter;};
+const calculateArea=pts=>{if(pts.length<3||!state.pixelsPerMeter)return 0;let a=0;for(let i=0;i<pts.length;i++){let j=(i+1)%pts.length;a+=pts[i].x*pts[j].y-pts[j].x*pts[i].y;}return Math.abs(a)/2/state.pixelsPerMeter**2;};
+const distToSeg=(p,v,w)=>{const l2=(w.x-v.x)**2+(w.y-v.y)**2;if(!l2)return dist(p,v);let t=Math.max(0,Math.min(1,((p.x-v.x)*(w.x-v.x)+(p.y-v.y)*(w.y-v.y))/l2));return dist(p,{x:v.x+t*(w.x-v.x),y:v.y+t*(w.y-v.y)});};
+
+// IMPRESSION
+function generatePrintImage(){
+    const c=els.printCanvas,x=c.getContext('2d'),pad=50,rh=32;
+    const rows=[];
+    state.tools.forEach(t=>{let val='',unit='';
+        if(t.type==='VRD'){val=t.measurements.reduce((a,p)=>a+calculateLength(p,false),0).toFixed(2);unit='ml';}
+        else if(t.type==='TRANCHEE'){const l=t.measurements.reduce((a,p)=>a+calculateLength(p,false),0);val=(l*t.trancheeW*t.trancheeD).toFixed(2);unit='m³';}
+        else if(t.type==='AREA'){val=t.measurements.reduce((a,p)=>a+calculateArea(p),0).toFixed(2);unit='m²';}
+        else{val=t.measurements.length;unit='u';}
+        rows.push({name:t.name,type:t.type,val,unit,maj:(parseFloat(val)*1.1).toFixed(2)});});
+    c.width=800;c.height=220+rows.length*rh+60;
+    x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);
+    x.fillStyle='#000';x.font='bold 20px sans-serif';x.fillText('MAPULATOR — RÉCAPITULATIF',pad,52);
+    x.font='12px sans-serif';x.fillStyle='#777';x.fillText('Généré le '+new Date().toLocaleString('fr-FR'),pad,76);
+    x.fillStyle='#000';x.font='bold 10px sans-serif';x.textAlign='left';x.fillText('DÉSIGNATION',pad,125);
+    x.textAlign='right';x.fillText('NET',530,125);x.fillText('MAJORÉ +10%',730,125);
+    x.beginPath();x.moveTo(pad,132);x.lineTo(730,132);x.strokeStyle='#ddd';x.lineWidth=1;x.stroke();
+    x.textAlign='left';let y=158;
+    if(!rows.length){x.font='italic 12px sans-serif';x.fillStyle='#aaa';x.fillText('Aucune donnée.',pad,y);}
+    else rows.forEach((r,i)=>{
+        if(i%2===0){x.fillStyle='#f8f8f8';x.fillRect(pad-8,y-20,730-pad+16,rh);}
+        const pfx={'VRD':'— ','TRANCHEE':'▬ ','AREA':'▲ ','POINT':'● '}[r.type]||'';
+        x.fillStyle='#000';x.font='bold 12px sans-serif';x.textAlign='left';x.fillText(pfx+r.name,pad,y);
+        x.textAlign='right';x.font='12px monospace';x.fillStyle='#555';x.fillText(r.val+' '+r.unit,530,y);
+        x.font='bold 12px monospace';x.fillStyle='#b45309';x.fillText(r.maj+' '+r.unit,730,y);y+=rh;});
+    const a=document.createElement('a');a.download=`Mapulator_${new Date().toISOString().slice(0,10)}.png`;a.href=c.toDataURL('image/png');a.click();
+}
+
+// INTERACTIONS
+function getCoords(e){const r=els.drawCanvas.getBoundingClientRect();return{x:(e.clientX-r.left)*(els.drawCanvas.width/r.width),y:(e.clientY-r.top)*(els.drawCanvas.height/r.height)};}
+function toggleFullScreen(){const e=document.documentElement,isFs=document.fullscreenElement||document.webkitFullscreenElement;if(!isFs)(e.requestFullscreen||e.webkitRequestFullscreen||function(){alert('Non supporté')}).call(e);else(document.exitFullscreen||document.webkitExitFullscreen).call(document);}
+['fullscreenchange','webkitfullscreenchange'].forEach(ev=>document.addEventListener(ev,()=>{const btn=document.getElementById('btn-fs');if(btn)btn.querySelector('svg').innerHTML=(document.fullscreenElement||document.webkitFullscreenElement)?'<path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 0 2-2h3M3 16h3a2 2 0 0 0 2 2v3" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>':'<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>';}));
+function handleButtonZoom(f){if(!state.imageSrc)return;const ns=Math.min(Math.max(0.1,state.transform.scale*f),20);const r=els.workspace.getBoundingClientRect(),cx=r.width/2,cy=r.height/2,ratio=ns/state.transform.scale;setState({transform:{scale:ns,x:cx-(cx-state.transform.x)*ratio,y:cy-(cy-state.transform.y)*ratio}});}
+els.workspace.addEventListener('wheel',e=>{if(!state.imageSrc)return;e.preventDefault();const d=-e.deltaY*0.0015,ns=Math.min(Math.max(0.1,state.transform.scale*Math.exp(d)),20);const r=els.workspace.getBoundingClientRect(),ratio=ns/state.transform.scale;setState({transform:{scale:ns,x:(e.clientX-r.left)-((e.clientX-r.left)-state.transform.x)*ratio,y:(e.clientY-r.top)-((e.clientY-r.top)-state.transform.y)*ratio}});},{passive:false});
+els.workspace.addEventListener('pointerdown',e=>{if(e.button===1||(e.button===0&&e.altKey)){e.preventDefault();setState({isPanning:true,panStart:{x:e.clientX-state.transform.x,y:e.clientY-state.transform.y}});}});
+els.workspace.addEventListener('pointermove',e=>{
+    if(state.isPanning){
+        // Le pan modifie le transform → renderDOM nécessaire pour repositionner le canvasContainer
+        setState({transform:{...state.transform,x:e.clientX-state.panStart.x,y:e.clientY-state.panStart.y}});
+    } else if(state.imageSrc){
+        // Mise à jour silencieuse : pas de renderDOM, juste redessiner le canvas
+        state.mousePos = getCoords(e);
+        drawCanvas();
+    }
+});
+['pointerup','pointerleave'].forEach(ev=>els.workspace.addEventListener(ev,()=>{if(state.isPanning)setState({isPanning:false});}));
+els.drawCanvas.addEventListener('click',e=>{
+    if(e.button!==0||state.isPanning||e.altKey) return;
+    const pt=getCoords(e);
+    if(state.isEraserMode){
+        let hit=false,newTools=[...state.tools];
+        for(let t=newTools.length-1;t>=0&&!hit;t--){let meas=[...newTools[t].measurements];for(let m=meas.length-1;m>=0;m--){let pts=meas[m],isHit=false;if(newTools[t].type==='POINT'){if(pts.length&&dist(pt,pts[0])<=16)isHit=true;}else{for(let i=0;i<pts.length-1;i++)if(distToSeg(pt,pts[i],pts[i+1])<=16)isHit=true;if(newTools[t].type==='AREA'&&pts.length>=3&&distToSeg(pt,pts[pts.length-1],pts[0])<=16)isHit=true;}if(isHit){meas.splice(m,1);newTools[t]={...newTools[t],measurements:meas};hit=true;break;}}}
+        if(hit)setState({tools:newTools}); return;
+    }
+    if(state.appState==='MEASURE'&&['VRD','TRANCHEE','AREA','POINT'].includes(state.activeTab)){
+        if(!state.activeToolId){alert("Sélectionnez un outil.");setState({isDrawerOpen:true});return;}
+        if(state.activeTab==='POINT'){setState({tools:state.tools.map(t=>t.id===state.activeToolId?{...t,measurements:[...t.measurements,[pt]]}:t)});return;}
+        let upd={currentLine:[...state.currentLine,pt]};
+        if(state.currentLine.length===0)upd.isDrawerOpen=false;
+        setState(upd);
+    }
+});
+const finishLine=e=>{if(e)e.preventDefault();if(state.isEraserMode||!state.currentLine.length)return;const tool=state.tools.find(t=>t.id===state.activeToolId);if(!tool)return;const min=(tool.type==='AREA')?3:2;if(state.currentLine.length>=min){setState({tools:state.tools.map(t=>t.id===state.activeToolId?{...t,measurements:[...t.measurements,state.currentLine]}:t),currentLine:[],isDrawerOpen:true});}else alert(`Minimum ${min} points.`);};
+els.drawCanvas.addEventListener('contextmenu',finishLine);
+els.drawCanvas.addEventListener('dblclick',finishLine);
+window.addEventListener('keydown',e=>{
+    const tag=document.activeElement?.tagName?.toLowerCase();
+    if(tag==='input'||tag==='textarea'||document.activeElement?.isContentEditable)return;
+    if(e.key==='Escape') setState({currentLine:[],isDrawerOpen:true,isEraserMode:false,isCreatorOpen:false});
+    if(e.key==='Backspace') setState({currentLine:state.currentLine.slice(0,-1)});
+    if(e.key==='Enter') finishLine();
+});
+
+renderDOM();
+toggleTab('SETUP');
+</script>
 </body>
 </html>

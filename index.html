@@ -534,9 +534,12 @@ function buildItemTab() {
         groups[key].push(t);
     });
 
-    // Trier : indices nommés alphabétiques d'abord, Divers en dernier
+    const TYPE_ORDER_ACCORD = {VRD:0, AREA:1, TRANCHEE:2, POINT:3};
     const sortedKeys = Object.keys(groups).filter(k=>k!=='__DIVERS__').sort();
     if (groups['__DIVERS__']) sortedKeys.push('__DIVERS__');
+    sortedKeys.forEach(k=>{
+        groups[k] = groups[k].slice().sort((a,b)=>(TYPE_ORDER_ACCORD[a.type]??9)-(TYPE_ORDER_ACCORD[b.type]??9));
+    });
 
     // État ouvert des accordéons (persisté dans state.accordOpen)
     if (!state.accordOpen) state.accordOpen = {};
@@ -975,18 +978,19 @@ async function generatePrintImage(){
     const TYPE_LABEL = {VRD:'VRD', TRANCHEE:'Tranchée', AREA:'Surface', POINT:'Pointage'};
     const W=210, pad=14, colType=130, colNet=158, colMaj=196;
 
-    // Grouper par indice
+    // Grouper par indice puis trier : VRD(ml) → AREA(m²) → TRANCHEE(m³) → POINT(u)
+    const TYPE_ORDER = {VRD:0, AREA:1, TRANCHEE:2, POINT:3};
     const groups={};
     state.tools.forEach(t=>{
         const key=(t.indice&&t.indice.trim())?t.indice.trim().toUpperCase():'DIVERS';
         if(!groups[key]) groups[key]=[];
         groups[key].push(t);
     });
-    const TYPE_ORDER = {VRD:0, AREA:1, TRANCHEE:2, POINT:3};
     const keys=Object.keys(groups).filter(k=>k!=='DIVERS').sort();
     if(groups['DIVERS']) keys.push('DIVERS');
-    // Trier les items de chaque groupe
-    keys.forEach(k=>{ groups[k].sort((a,b)=>(TYPE_ORDER[a.type]??9)-(TYPE_ORDER[b.type]??9)); });
+    keys.forEach(k=>{
+        groups[k] = groups[k].slice().sort((a,b)=>(TYPE_ORDER[a.type]??9)-(TYPE_ORDER[b.type]??9));
+    });
 
     // ── EN-TÊTE ──
     doc.setFillColor(15,15,15);

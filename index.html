@@ -982,8 +982,11 @@ async function generatePrintImage(){
         if(!groups[key]) groups[key]=[];
         groups[key].push(t);
     });
+    const TYPE_ORDER = {VRD:0, AREA:1, TRANCHEE:2, POINT:3};
     const keys=Object.keys(groups).filter(k=>k!=='DIVERS').sort();
     if(groups['DIVERS']) keys.push('DIVERS');
+    // Trier les items de chaque groupe
+    keys.forEach(k=>{ groups[k].sort((a,b)=>(TYPE_ORDER[a.type]??9)-(TYPE_ORDER[b.type]??9)); });
 
     // ── EN-TÊTE ──
     doc.setFillColor(15,15,15);

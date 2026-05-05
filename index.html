@@ -152,6 +152,31 @@
         .vrd-icon-btn:hover { border-color: var(--amber-dk); background: #1c1400; }
         .vrd-icon-btn.sel { border-color: var(--amber); background: #1c1400; box-shadow: 0 0 0 2px rgba(245,158,11,0.2); }
 
+        .accord-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 11px; border-radius: 9px; cursor: pointer;
+            background: #111; border: 1px solid var(--border);
+            transition: all 0.12s; user-select: none;
+        }
+        .accord-header:hover { border-color: var(--border2); background: #161616; }
+        .accord-header.open { border-color: var(--amber-dk); background: #0f0a00; }
+        .accord-body { display: none; flex-direction: column; gap: 6px; padding-top: 6px; }
+        .accord-body.open { display: flex; }
+        .accord-chevron { transition: transform 0.18s; flex-shrink: 0; }
+        .accord-chevron.open { transform: rotate(90deg); }
+
+        /* Boutons outil — icône seule colorée */
+        .tb-tool-btn {
+            width: 36px; height: 36px; border-radius: 8px;
+            border: 2px solid transparent;
+            background: transparent; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.12s; flex-shrink: 0;
+            opacity: 0.5;
+        }
+        .tb-tool-btn:hover { background: #18181b; opacity: 1; }
+        .tb-tool-btn.active { border-color: #fff; background: #18181b; opacity: 1; box-shadow: 0 0 0 1px rgba(255,255,255,0.15); }
+
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
@@ -178,47 +203,47 @@
         <span style="color:#fff;font-weight:700;font-size:0.82rem;letter-spacing:0.06em;">MAPULATOR</span>
     </div>
     <div class="tb-sep"></div>
-    <button id="tb-SETUP" onclick="toggleTab('SETUP')" class="tb-btn">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/></svg>
-        Setup
-    </button>
+    <!-- SETUP / ITEM : interrupteur -->
+    <div style="display:flex;background:#18181b;border:1px solid var(--border2);border-radius:8px;padding:2px;gap:2px;flex-shrink:0;">
+        <button id="tb-SETUP" onclick="toggleTab('SETUP')" class="tb-btn" style="padding:5px 10px;border-radius:6px;gap:5px;" title="Setup">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/></svg>
+            <span style="font-size:0.7rem;">Setup</span>
+        </button>
+        <button id="tb-ITEM" onclick="toggleTab('ITEM')" class="tb-btn" style="padding:5px 10px;border-radius:6px;gap:5px;" title="Items">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            <span style="font-size:0.7rem;">Items</span>
+        </button>
+    </div>
     <div class="tb-sep"></div>
-    <span class="tb-label">Outils</span>
-    <button id="tb-VRD" onclick="toggleTab('VRD')" class="tb-btn">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <path d="M3 12h18"/><circle cx="3" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="21" cy="12" r="1.8" fill="currentColor" stroke="none"/>
+    <!-- Outils — icône seule, colorée -->
+    <button id="tb-VRD" onclick="toggleTab('VRD')" class="tb-tool-btn" title="VRD — Linéaires">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round">
+            <path d="M3 12h18"/><circle cx="3" cy="12" r="2" fill="#60a5fa" stroke="none"/><circle cx="12" cy="12" r="2" fill="#60a5fa" stroke="none"/><circle cx="21" cy="12" r="2" fill="#60a5fa" stroke="none"/>
         </svg>
-        VRD
     </button>
-    <button id="tb-TRANCHEE" onclick="toggleTab('TRANCHEE')" class="tb-btn">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <rect x="2" y="8" width="20" height="8" rx="2" fill="currentColor" opacity="0.18"/><rect x="2" y="8" width="20" height="8" rx="2"/>
+    <button id="tb-TRANCHEE" onclick="toggleTab('TRANCHEE')" class="tb-tool-btn" title="Tranchée — Volumes">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="2" stroke-linecap="round">
+            <rect x="2" y="8" width="20" height="8" rx="2" fill="#fb923c" opacity="0.22"/><rect x="2" y="8" width="20" height="8" rx="2"/>
             <line x1="7" y1="8" x2="7" y2="16"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="17" y1="8" x2="17" y2="16"/>
         </svg>
-        Tranchée
     </button>
-    <button id="tb-AREA" onclick="toggleTab('AREA')" class="tb-btn">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <polygon points="3,19 12,3 21,19" fill="currentColor" opacity="0.18"/><polygon points="3,19 12,3 21,19"/>
-            <circle cx="3" cy="19" r="1.8" fill="currentColor" stroke="none"/><circle cx="12" cy="3" r="1.8" fill="currentColor" stroke="none"/><circle cx="21" cy="19" r="1.8" fill="currentColor" stroke="none"/>
+    <button id="tb-AREA" onclick="toggleTab('AREA')" class="tb-tool-btn" title="Surfaces">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round">
+            <polygon points="3,19 12,3 21,19" fill="#4ade80" opacity="0.2"/><polygon points="3,19 12,3 21,19"/>
+            <circle cx="3" cy="19" r="2" fill="#4ade80" stroke="none"/><circle cx="12" cy="3" r="2" fill="#4ade80" stroke="none"/><circle cx="21" cy="19" r="2" fill="#4ade80" stroke="none"/>
         </svg>
-        Surfaces
     </button>
-    <button id="tb-POINT" onclick="toggleTab('POINT')" class="tb-btn">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="currentColor" opacity="0.2"/>
+    <button id="tb-POINT" onclick="toggleTab('POINT')" class="tb-tool-btn" title="Pointage VRD">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f472b6" stroke-width="2" stroke-linecap="round">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#f472b6" opacity="0.2"/>
             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
-            <circle cx="12" cy="9" r="2.5" fill="currentColor" opacity="0.7"/>
+            <circle cx="12" cy="9" r="2.5" fill="#f472b6" opacity="0.8"/>
         </svg>
-        Pointage
     </button>
     <div class="tb-sep"></div>
-    <button id="tb-SUMMARY" onclick="toggleTab('SUMMARY')" class="tb-btn">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <rect x="3" y="3" width="18" height="18" rx="2"/>
-            <line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="7" y1="16" x2="13" y2="16"/>
-        </svg>
-        Récap
+    <button id="tb-SUMMARY" onclick="toggleTab('SUMMARY')" class="tb-btn" title="Imprimer le récap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        <span style="font-size:0.7rem;">Print</span>
     </button>
     <div class="tb-spacer"></div>
     <button id="tb-eraser" onclick="toggleEraser()" class="tb-btn danger">
@@ -252,7 +277,6 @@
         <div style="color:#fff;font-weight:700;margin-top:10px;font-size:0.9rem;">Traitement…</div>
     </div>
     <div id="canvasContainer" style="display:none;position:absolute;transform-origin:top left;border:1px solid var(--border);">
-        <img id="bgImage" alt="Plan" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:block;"/>
         <canvas id="drawCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;"></canvas>
     </div>
     <canvas id="printCanvas" style="display:none;"></canvas>
@@ -278,10 +302,13 @@ const COLORS = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#a855f7'];
 let state = {
     activeTab: null, isDrawerOpen: false,
     isCreatorOpen: false, creatorMode: null,
-    creatorData: { name:'', color:COLORS[4], thickness:20, pointSize:12, editingId:null, vrdIcon:'regard', trancheeW:'0.80', trancheeD:'1.20' },
+    creatorData: { name:'', color:COLORS[4], thickness:20, pointSize:12, indice:'', editingId:null, vrdIcon:'regard', trancheeW:'0.80', trancheeD:'1.20' },
     appState: 'UPLOAD',
-    imageSrc: null, imageObj: null, imageSize: {w:0,h:0},
-    isPdf: false, scaleRatioInput: '50',
+    // Plans multiples : [{id, src, imageObj, w, h, opacity, isPdf}]
+    plans: [],
+    // imageSize = dimensions du plan de référence (plan 0)
+    imageSize: {w:0, h:0},
+    scaleRatioInput: '50',
     isLoading: false, pixelsPerMeter: null,
     tools: [], activeToolId: null,
     isEraserMode: false, currentLine: [],
@@ -298,7 +325,6 @@ const els = {
     emptyState:      document.getElementById('emptyState'),
     loader:          document.getElementById('loader'),
     canvasContainer: document.getElementById('canvasContainer'),
-    bgImage:         document.getElementById('bgImage'),
     drawCanvas:      document.getElementById('drawCanvas'),
     eraserBanner:    document.getElementById('eraserBanner'),
     printCanvas:     document.getElementById('printCanvas'),
@@ -308,17 +334,27 @@ const ctx = els.drawCanvas.getContext('2d');
 function setState(upd) { Object.assign(state, upd); renderDOM(); drawCanvas(); }
 
 function renderDOM() {
+    const hasPlan = state.plans && state.plans.length > 0;
     els.loader.style.display     = state.isLoading ? 'flex' : 'none';
-    els.emptyState.style.display = (!state.imageSrc && !state.isLoading) ? 'flex' : 'none';
+    els.emptyState.style.display = (!hasPlan && !state.isLoading) ? 'flex' : 'none';
 
-    if (state.imageSrc) {
+    if (hasPlan) {
         els.canvasContainer.style.display = 'block';
-        if (els.bgImage.src !== state.imageSrc) els.bgImage.src = state.imageSrc;
-        els.canvasContainer.style.width  = state.imageSize.w + 'px';
-        els.canvasContainer.style.height = state.imageSize.h + 'px';
+        els.canvasContainer.style.width   = state.imageSize.w + 'px';
+        els.canvasContainer.style.height  = state.imageSize.h + 'px';
         els.drawCanvas.width  = state.imageSize.w;
         els.drawCanvas.height = state.imageSize.h;
         els.canvasContainer.style.transform = `translate(${state.transform.x}px,${state.transform.y}px) scale(${state.transform.scale})`;
+        // Reconstruire les couches images dans l'ordre
+        els.canvasContainer.querySelectorAll('img.plan-layer').forEach(el=>el.remove());
+        state.plans.forEach((plan, i) => {
+            const img = document.createElement('img');
+            img.className = 'plan-layer';
+            img.src = plan.src;
+            img.style.cssText = `position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:block;opacity:${plan.opacity??1};z-index:${i+1};`;
+            els.canvasContainer.insertBefore(img, els.drawCanvas);
+        });
+        els.drawCanvas.style.zIndex = state.plans.length + 1;
         const at = state.tools.find(t=>t.id===state.activeToolId);
         const drawMode = state.appState==='MEASURE' && at && ['VRD','TRANCHEE','AREA','POINT'].includes(at.type);
         els.drawCanvas.style.cursor = state.isPanning ? 'grabbing' : (state.isEraserMode||drawMode ? 'crosshair' : 'grab');
@@ -327,11 +363,7 @@ function renderDOM() {
     }
 
     els.eraserBanner.style.display = state.isEraserMode ? 'flex' : 'none';
-
-    // OVERLAY drawer
     els.drawer.classList.toggle('open', !!(state.isDrawerOpen && state.activeTab));
-
-    // OVERLAY creator bar
     els.creatorBar.classList.toggle('open', state.isCreatorOpen);
     if (state.isCreatorOpen) renderCreatorBar();
     else els.creatorBar.innerHTML = '';
@@ -342,21 +374,25 @@ function renderDOM() {
 
 function renderCreatorBar() {
     const d = state.creatorData;
-    const tab = state.activeTab;
+    const tab = d.effectiveType || state.activeTab;
     const isEdit = state.creatorMode === 'edit';
     const typeLabel = {VRD:'VRD',TRANCHEE:'Tranchée',AREA:'Surface',POINT:'Pointage'}[tab]||'';
     const S = 'width:1px;height:22px;background:var(--border);margin:0 3px;flex-shrink:0;';
 
     const colorDots = COLORS.map(c=>`<div class="cr-color ${d.color===c?'sel':''}" style="background:${c}" onclick="selectCreatorColor('${c}')"></div>`).join('');
 
-    // Épaisseur → Tranchée uniquement
-    const thickHtml = tab==='TRANCHEE' ? `
-        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-            <span style="font-size:0.6rem;color:var(--muted);">Ép.</span>
-            <input type="range" class="cr-range" min="8" max="60" value="${d.thickness||20}"
-                   oninput="state.creatorData.thickness=+this.value;document.getElementById('thickVal').textContent=this.value+'px';" onkeydown="event.stopPropagation()"/>
-            <span id="thickVal" style="font-size:0.63rem;color:var(--amber);width:28px;font-weight:700;">${d.thickness||20}px</span>
-        </div>` : '';
+    // Indice — toujours présent
+    const existingIndices = [...new Set(state.tools.map(t=>t.indice||'').filter(Boolean))];
+    const datalistId = 'indice-list-' + Date.now();
+    const indiceHtml = `
+        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
+            <span style="font-size:0.6rem;color:var(--muted);white-space:nowrap;">Indice</span>
+            <input id="cr-indice" class="cr-input" style="width:80px;" placeholder="EU, AEP…"
+                   value="${d.indice||''}" list="${datalistId}"
+                   oninput="state.creatorData.indice=this.value" onkeydown="handleCreatorKey(event)"/>
+            <datalist id="${datalistId}">${existingIndices.map(i=>`<option value="${i}">`).join('')}</datalist>
+        </div>`;
+    const thickHtml = ''; // Tranchée : épaisseur fixe automatique sur le canvas
 
     // Taille icône → Pointage uniquement
     const sizeHtml = tab==='POINT' ? `
@@ -389,6 +425,8 @@ function renderCreatorBar() {
                oninput="state.creatorData.name=this.value" onkeydown="handleCreatorKey(event)"/>
         <div style="${S}"></div>
         <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">${colorDots}</div>
+        ${indiceHtml}
+        <div style="${S}"></div>
         ${thickHtml   ? `<div style="${S}"></div>${thickHtml}`   : ''}
         ${sizeHtml    ? `<div style="${S}"></div>${sizeHtml}`    : ''}
         ${iconsHtml   ? `<div style="${S}"></div>${iconsHtml}`   : ''}
@@ -410,20 +448,28 @@ function selectVrdIcon(key) {
     [...document.querySelectorAll('.vrd-icon-btn')].find(b=>b.title===VRD_ICONS[key].label)?.classList.add('sel');
 }
 function handleCreatorKey(e) { e.stopPropagation(); if(e.key==='Enter') saveTool(); if(e.key==='Escape') cancelCreator(); }
-function openCreator(mode, toolId=null) {
-    let d={ name:'', color:COLORS[4], thickness:20, pointSize:12, editingId:null, vrdIcon:'regard', trancheeW:'0.80', trancheeD:'1.20' };
-    if(mode==='edit'&&toolId){ const t=state.tools.find(x=>x.id===toolId); if(t) d={name:t.name,color:t.color,thickness:t.thickness||20,pointSize:t.pointSize||12,editingId:t.id,vrdIcon:t.vrdIcon||'regard',trancheeW:String(t.trancheeW||'0.80'),trancheeD:String(t.trancheeD||'1.20')}; }
-    setState({ isCreatorOpen:true, creatorMode:mode, creatorData:d });
+function openCreator(mode, toolId=null, forceType=null) {
+    let d={ name:'', color:COLORS[4], thickness:20, pointSize:12, indice:'', editingId:null, vrdIcon:'regard', trancheeW:'0.80', trancheeD:'1.20' };
+    if(mode==='edit'&&toolId){ const t=state.tools.find(x=>x.id===toolId); if(t) d={name:t.name,color:t.color,thickness:t.thickness||20,pointSize:t.pointSize||12,indice:t.indice||'',editingId:t.id,vrdIcon:t.vrdIcon||'regard',trancheeW:String(t.trancheeW||'0.80'),trancheeD:String(t.trancheeD||'1.20')}; }
+    // type effectif : forcé > outil édité > onglet actif
+    const effectiveType = forceType || (d.editingId ? state.tools.find(t=>t.id===d.editingId)?.type : null) || state.activeTab;
+    d.effectiveType = effectiveType;
+    setState({ activeTab:'ITEM', isDrawerOpen:true, isCreatorOpen:true, creatorMode:mode, creatorData:d });
 }
 function cancelCreator() { setState({ isCreatorOpen:false, creatorMode:null }); }
 function saveTool() {
     const nameEl=document.getElementById('cr-name');
+    const indiceEl=document.getElementById('cr-indice');
     const name=(nameEl?nameEl.value:state.creatorData.name).trim();
     if(!name){ if(nameEl) nameEl.focus(); return; }
     const d=state.creatorData;
+    const indice=(indiceEl?indiceEl.value:d.indice||'').trim().toUpperCase();
+    const effectiveType = d.effectiveType || state.activeTab;
     const existing=d.editingId?state.tools.find(t=>t.id===d.editingId):null;
-    const newTool={ id:d.editingId||Date.now().toString(), name, type:d.editingId?existing.type:state.activeTab,
+    const newTool={ id:d.editingId||Date.now().toString(), name,
+        type: d.editingId ? existing.type : effectiveType,
         color:d.color, thickness:+d.thickness, pointSize:+(d.pointSize||12), vrdIcon:d.vrdIcon,
+        indice,
         trancheeW:parseFloat(d.trancheeW)||0.8, trancheeD:parseFloat(d.trancheeD)||1.2,
         hidden: existing ? existing.hidden : false,
         measurements:existing?existing.measurements:[] };
@@ -433,61 +479,210 @@ function saveTool() {
 }
 
 function renderToolbarStates() {
-    ['SETUP','VRD','TRANCHEE','AREA','POINT','SUMMARY'].forEach(t=>{
+    const activeTool = state.tools.find(t=>t.id===state.activeToolId);
+    const activeToolType = activeTool?.type || null;
+
+    // Interrupteur SETUP / ITEM
+    ['SETUP','ITEM'].forEach(t=>{
         const btn=document.getElementById('tb-'+t); if(!btn) return;
-        btn.className=(state.activeTab===t&&state.isDrawerOpen)?'tb-btn active':'tb-btn';
-        if(['VRD','TRANCHEE','AREA','POINT','SUMMARY'].includes(t)){
-            btn.style.opacity=state.pixelsPerMeter?'1':'0.3';
-            btn.style.pointerEvents=state.pixelsPerMeter?'auto':'none';
-        }
+        const isActive = state.activeTab===t && state.isDrawerOpen;
+        btn.style.background = isActive ? '#292929' : 'transparent';
+        btn.style.color = isActive ? '#fff' : '';
+        btn.style.borderColor = 'transparent';
+        const lock = t==='ITEM' && !state.pixelsPerMeter;
+        btn.style.opacity = lock ? '0.3' : '1';
+        btn.style.pointerEvents = lock ? 'none' : 'auto';
+        btn.className = isActive ? 'tb-btn active' : 'tb-btn';
     });
-    const eb=document.getElementById('tb-eraser'); if(eb) eb.className=state.isEraserMode?'tb-btn danger active':'tb-btn danger';
+
+    // Boutons outils — classe tb-tool-btn, actif = outil actif de dessin
+    ['VRD','TRANCHEE','AREA','POINT'].forEach(t=>{
+        const btn=document.getElementById('tb-'+t); if(!btn) return;
+        const isActive = activeToolType===t;
+        btn.className = isActive ? 'tb-tool-btn active' : 'tb-tool-btn';
+        btn.style.opacity = state.pixelsPerMeter ? (isActive?'1':'0.6') : '0.2';
+        btn.style.pointerEvents = state.pixelsPerMeter ? 'auto' : 'none';
+    });
+
+    // Print — action pure, jamais actif
+    const ps=document.getElementById('tb-SUMMARY');
+    if(ps){ ps.className='tb-btn'; ps.style.opacity=state.pixelsPerMeter?'1':'0.3'; ps.style.pointerEvents=state.pixelsPerMeter?'auto':'none'; }
+
+    // Gomme
+    const eb=document.getElementById('tb-eraser');
+    if(eb) eb.className=state.isEraserMode?'tb-btn danger active':'tb-btn danger';
 }
 
 function renderDrawerContent() {
     if(!state.activeTab) return;
-    const titles={SETUP:'Setup',VRD:'VRD — Linéaires',TRANCHEE:'Tranchée — Volumes',AREA:'Surfaces',POINT:'Pointage VRD',SUMMARY:'Récapitulatif'};
+    const titles={SETUP:'Setup', ITEM:'Items'};
     els.drawerTitle.textContent=titles[state.activeTab]||'';
     let html='';
     if(state.activeTab==='SETUP') html=buildSetup();
-    else if(['VRD','TRANCHEE','AREA','POINT'].includes(state.activeTab)){
-        // Barre d'actions groupe : + Ajouter / 👁 Afficher-Masquer tout
-        const typeTools = state.tools.filter(t=>t.type===state.activeTab);
-        const allHidden = typeTools.length > 0 && typeTools.every(t=>t.hidden);
-        const eyeIcon = allHidden
-            ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
-            : `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
-        html += `
-        <div style="display:flex;gap:6px;">
-            <button onclick="openCreator('new')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:1.5px dashed var(--border2);border-radius:10px;padding:8px;background:transparent;color:var(--muted);font-family:inherit;font-weight:700;font-size:0.73rem;cursor:pointer;transition:all 0.12s;" onmouseover="this.style.borderColor='var(--amber-dk)';this.style.color='var(--amber)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted)'">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Ajouter
-            </button>
-            <button onclick="toggleGroupVisibility('${state.activeTab}')" title="${allHidden?'Afficher tout':'Masquer tout'}" style="width:36px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border2);border-radius:10px;background:#18181b;color:${allHidden?'var(--amber)':'var(--muted)'};cursor:pointer;transition:all 0.12s;flex-shrink:0;" onmouseover="this.style.color='var(--white)';this.style.borderColor='var(--border2)'" onmouseout="this.style.color='${allHidden?'var(--amber)':'var(--muted)'}';this.style.borderColor='var(--border2)'">
-                ${eyeIcon}
-            </button>
-        </div>`;
-        html+=buildToolList(state.activeTab);
-    } else if(state.activeTab==='SUMMARY') html=buildSummary();
+    else if(state.activeTab==='ITEM') html=buildItemTab();
     els.drawerContent.innerHTML=html;
 }
 
-function buildSetup(){return`
+function buildItemTab() {
+    if (!state.tools.length) return `<p style="font-size:0.7rem;color:var(--border2);text-transform:uppercase;letter-spacing:0.07em;text-align:center;padding:24px 0;">Aucun outil créé</p>`;
+
+    // Grouper par indice, Divers en dernier
+    const groups = {};
+    state.tools.forEach(t => {
+        const key = t.indice && t.indice.trim() ? t.indice.trim().toUpperCase() : '__DIVERS__';
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(t);
+    });
+
+    // Trier : indices nommés alphabétiques d'abord, Divers en dernier
+    const sortedKeys = Object.keys(groups).filter(k=>k!=='__DIVERS__').sort();
+    if (groups['__DIVERS__']) sortedKeys.push('__DIVERS__');
+
+    // État ouvert des accordéons (persisté dans state.accordOpen)
+    if (!state.accordOpen) state.accordOpen = {};
+
+    const TYPE_ICON = {
+        VRD: `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 12h18"/></svg>`,
+        TRANCHEE: `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="2" y="8" width="20" height="8" rx="2"/></svg>`,
+        AREA: `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="3,19 12,3 21,19"/></svg>`,
+        POINT: `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>`
+    };
+
+    let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+
+    sortedKeys.forEach(key => {
+        const tools = groups[key];
+        const label = key === '__DIVERS__' ? 'Divers' : key;
+        const isOpen = state.accordOpen[key] !== false; // ouvert par défaut
+        const allHidden = tools.every(t=>t.hidden);
+        const chevron = `<svg class="accord-chevron ${isOpen?'open':''}" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>`;
+        const eyeIcon = allHidden
+            ? `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
+            : `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+
+        html += `
+        <div>
+            <div class="accord-header ${isOpen?'open':''}" onclick="toggleAccord('${key}')">
+                <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+                    ${chevron}
+                    <span style="font-weight:700;font-size:0.8rem;color:${isOpen?'#fff':'var(--text)'};letter-spacing:0.04em;">${label}</span>
+                    <span style="font-size:0.62rem;color:var(--muted);background:var(--border2);padding:1px 6px;border-radius:4px;">${tools.length}</span>
+                </div>
+                <button onclick="event.stopPropagation();toggleIndiceVisibility('${key}')" style="background:none;border:none;cursor:pointer;color:${allHidden?'var(--amber)':'var(--muted)'};padding:3px;border-radius:5px;display:flex;align-items:center;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='${allHidden?'var(--amber)':'var(--muted)'}'">
+                    ${eyeIcon}
+                </button>
+            </div>
+            <div class="accord-body ${isOpen?'open':''}">
+                ${tools.map(tool => buildToolCard(tool)).join('')}
+            </div>
+        </div>`;
+    });
+
+    html += '</div>';
+    return html;
+}
+
+function toggleAccord(key) {
+    if (!state.accordOpen) state.accordOpen = {};
+    state.accordOpen[key] = state.accordOpen[key] === false ? true : false;
+    renderDrawerContent();
+}
+
+function toggleIndiceVisibility(key) {
+    const realKey = key === '__DIVERS__' ? '' : key;
+    const tools = state.tools.filter(t=>(t.indice||'').toUpperCase()===(realKey||'').toUpperCase()||(realKey===''&&!t.indice));
+    const allHidden = tools.every(t=>t.hidden);
+    const newTools = state.tools.map(t=>{
+        const match = realKey==='' ? (!t.indice||t.indice.trim()==='') : (t.indice||'').toUpperCase()===realKey.toUpperCase();
+        return match ? {...t, hidden:!allHidden} : t;
+    });
+    setState({tools:newTools});
+}
+
+function buildToolCard(tool) {
+    const isActive = state.activeToolId===tool.id;
+    const isTr=tool.type==='TRANCHEE', isPt=tool.type==='POINT', isAr=tool.type==='AREA';
+    const isHidden=!!tool.hidden;
+    const len=tool.measurements.reduce((a,p)=>a+calculateLength(p,isAr||isTr),0);
+    const area=isAr?tool.measurements.reduce((a,p)=>a+calculateArea(p),0):0;
+    const vol=isTr?len*tool.trancheeW*tool.trancheeD:0;
+    const sz=tool.pointSize||12;
+    const typeLabel={VRD:'VRD',TRANCHEE:'Tranchée',AREA:'Surface',POINT:'Pointage'}[tool.type]||'';
+    const preview=isPt
+        ?`<div style="color:${isHidden?'var(--muted)':tool.color};opacity:${isHidden?0.35:1};">${VRD_ICONS[tool.vrdIcon||'regard'].svg}</div>`
+        :`<div style="width:18px;height:${Math.max(isTr?(tool.thickness||20)/4:2,2)}px;border-radius:2px;background:${tool.color};opacity:${isHidden?0.2:isTr?0.5:1};flex-shrink:0;"></div>`;
+    const eyeBtn=`<button onclick="event.stopPropagation();toggleToolVisibility('${tool.id}')" style="background:#18181b;border:1px solid var(--border2);border-radius:5px;padding:2px 5px;cursor:pointer;color:${isHidden?'var(--amber)':'var(--muted)'};transition:all 0.1s;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='${isHidden?'var(--amber)':'var(--muted)'}'">
+        ${isHidden?`<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`:`<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`}
+    </button>`;
+    return `<div class="tool-card ${isActive?'active':''}" style="${isHidden?'opacity:0.5;':''}" onclick="setActiveTool('${tool.id}')">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+                ${preview}
+                <div style="min-width:0;">
+                    <div style="font-weight:700;font-size:0.76rem;color:${isActive?'#fff':'var(--text)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${tool.name}</div>
+                    <div style="font-size:0.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">${typeLabel}</div>
+                </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:3px;flex-shrink:0;margin-left:6px;">
+                <div style="text-align:right;margin-right:4px;line-height:1.2;">
+                    ${isTr?`<div style="font-family:monospace;font-size:0.68rem;font-weight:700;color:var(--amber);">${vol.toFixed(2)} m³</div>`:''}
+                    ${isAr?`<div style="font-family:monospace;font-size:0.68rem;font-weight:700;color:var(--amber);">${area.toFixed(2)} m²</div>`:''}
+                    ${tool.type==='VRD'?`<div style="font-family:monospace;font-size:0.68rem;font-weight:700;color:var(--amber);">${len.toFixed(2)} ml</div>`:''}
+                    ${isPt?`<div style="font-family:monospace;font-size:0.68rem;font-weight:700;color:var(--amber);">${tool.measurements.length} u</div>`:''}
+                </div>
+                ${eyeBtn}
+                <button onclick="event.stopPropagation();openCreator('edit','${tool.id}')" style="background:#18181b;border:1px solid var(--border2);border-radius:5px;padding:2px 5px;cursor:pointer;color:var(--muted);transition:all 0.1s;" onmouseover="this.style.color='#fff';this.style.background='var(--border2)'" onmouseout="this.style.color='var(--muted)';this.style.background='#18181b'"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                <button onclick="event.stopPropagation();deleteTool('${tool.id}')" style="background:#18181b;border:1px solid var(--border2);border-radius:5px;padding:2px 5px;cursor:pointer;color:var(--muted);transition:all 0.1s;" onmouseover="this.style.color='#ef4444';this.style.borderColor='#450a0a';this.style.background='#1f0808'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border2)';this.style.background='#18181b'"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+            </div>
+        </div>
+    </div>`;
+}
+
+function buildSetup(){
+    const plansHtml = state.plans.map((plan,i)=>`
+        <div style="background:#111;border:1px solid var(--border2);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+                <span style="font-size:0.72rem;font-weight:700;color:var(--white);">Plan ${i+1}${i===0?' <span style=\'font-size:0.6rem;color:var(--muted);\'>(référence)</span>':''}</span>
+                <div style="display:flex;gap:4px;">
+                    ${i>0?`<button onclick="movePlan(${i},-1)" style="background:#18181b;border:1px solid var(--border2);border-radius:5px;padding:2px 6px;cursor:pointer;color:var(--muted);font-size:0.7rem;" title="Remonter">↑</button>`:''}
+                    ${i<state.plans.length-1?`<button onclick="movePlan(${i},1)" style="background:#18181b;border:1px solid var(--border2);border-radius:5px;padding:2px 6px;cursor:pointer;color:var(--muted);font-size:0.7rem;" title="Descendre">↓</button>`:''}
+                    <button onclick="removePlan(${i})" style="background:#18181b;border:1px solid #450a0a;border-radius:5px;padding:2px 6px;cursor:pointer;color:#ef4444;font-size:0.7rem;" title="Supprimer">✕</button>
+                </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:0.6rem;color:var(--muted);white-space:nowrap;">Opacité</span>
+                <input type="range" min="0.05" max="1" step="0.05" value="${plan.opacity??1}"
+                       style="-webkit-appearance:none;height:4px;border-radius:2px;background:var(--border2);outline:none;cursor:pointer;flex:1;"
+                       oninput="setPlanOpacity(${i},+this.value);document.getElementById('op${i}').textContent=Math.round(this.value*100)+'%'"/>
+                <span id="op${i}" style="font-size:0.63rem;color:var(--amber);width:30px;font-weight:700;">${Math.round((plan.opacity??1)*100)}%</span>
+            </div>
+        </div>`).join('');
+
+    return`
     <div style="background:var(--surface);border:1px solid ${state.appState==='UPLOAD'?'var(--amber-dk)':'var(--border)'};border-radius:13px;padding:13px;">
-        <div style="font-size:0.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:9px;">1 — Plan</div>
-        ${state.imageSrc?`<span style="color:var(--amber);font-size:0.73rem;font-weight:700;background:#1c0f00;padding:5px 10px;border-radius:7px;border:1px solid var(--amber-dk);display:inline-block;">✓ Plan chargé</span>`:`<label style="display:block;text-align:center;padding:9px;border-radius:10px;font-weight:700;font-size:0.78rem;background:var(--amber-dk);color:#000;cursor:pointer;" onmouseover="this.style.background='var(--amber)'" onmouseout="this.style.background='var(--amber-dk)'">Importer PDF / Image<input type="file" accept=".pdf,image/*" style="display:none;" onchange="handleFileUpload(event)"/></label>`}
+        <div style="font-size:0.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Plans</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">${plansHtml}</div>
+        <label style="display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border:1.5px dashed var(--border2);border-radius:10px;font-weight:700;font-size:0.73rem;background:transparent;color:var(--muted);cursor:pointer;transition:all 0.12s;" onmouseover="this.style.borderColor='var(--amber-dk)';this.style.color='var(--amber)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted)'">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            ${state.plans.length===0?'Importer un plan':'Ajouter un plan'}
+            <input type="file" accept=".pdf,image/*" style="display:none;" onchange="handleFileUpload(event)"/>
+        </label>
     </div>
     <div style="background:var(--surface);border:1px solid ${state.appState==='SETUP_SCALE'?'var(--amber-dk)':'var(--border)'};border-radius:13px;padding:13px;">
-        <div style="font-size:0.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:9px;">2 — Échelle</div>
-        ${state.pixelsPerMeter?`<div style="color:var(--amber);font-size:0.73rem;font-weight:700;background:#1c0f00;padding:5px 10px;border-radius:7px;border:1px solid var(--amber-dk);margin-bottom:8px;">✓ 1 : ${state.scaleRatioInput}</div><button onclick="resetScale()" style="color:var(--muted);font-size:0.68rem;text-decoration:underline;background:none;border:none;cursor:pointer;font-family:inherit;">Modifier</button>`:state.appState!=='UPLOAD'?`<div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--white);font-size:0.78rem;font-weight:700;">1 :</span><input type="number" id="scaleInput" value="${state.scaleRatioInput}" class="d-input" style="width:66px;" onkeydown="event.stopPropagation()"/><button onclick="applyScaleRatio()" style="background:var(--amber-dk);color:#000;padding:6px 12px;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:0.73rem;font-family:inherit;" onmouseover="this.style.background='var(--amber)'" onmouseout="this.style.background='var(--amber-dk)'">OK</button></div>${!state.isPdf?`<div style="margin-top:8px;font-size:0.63rem;color:var(--amber);background:#1c0f00;padding:6px 10px;border-radius:7px;border:1px solid #78350f;">⚠️ Image importée — échelle approchée</div>`:''}`:` <p style="color:var(--border2);font-size:0.73rem;">Importez un plan d'abord.</p>`}
+        <div style="font-size:0.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:9px;">Échelle</div>
+        ${state.pixelsPerMeter?`<div style="color:var(--amber);font-size:0.73rem;font-weight:700;background:#1c0f00;padding:5px 10px;border-radius:7px;border:1px solid var(--amber-dk);margin-bottom:8px;">✓ 1 : ${state.scaleRatioInput}</div><button onclick="resetScale()" style="color:var(--muted);font-size:0.68rem;text-decoration:underline;background:none;border:none;cursor:pointer;font-family:inherit;">Modifier</button>`:state.appState!=='UPLOAD'?`<div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--white);font-size:0.78rem;font-weight:700;">1 :</span><input type="number" id="scaleInput" value="${state.scaleRatioInput}" class="d-input" style="width:66px;" onkeydown="event.stopPropagation()"/><button onclick="applyScaleRatio()" style="background:var(--amber-dk);color:#000;padding:6px 12px;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:0.73rem;font-family:inherit;" onmouseover="this.style.background='var(--amber)'" onmouseout="this.style.background='var(--amber-dk)'">OK</button></div>${state.plans[0]&&!state.plans[0].isPdf?`<div style="margin-top:8px;font-size:0.63rem;color:var(--amber);background:#1c0f00;padding:6px 10px;border-radius:7px;border:1px solid #78350f;">⚠️ Image importée — échelle approchée</div>`:''}`:`<p style="color:var(--border2);font-size:0.73rem;">Importez un plan d'abord.</p>`}
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:13px;">
         <div style="font-size:0.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:9px;">Projet</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <button onclick="exportProjectData()" style="display:flex;align-items:center;justify-content:center;gap:5px;background:var(--amber-dk);color:#000;padding:8px;border-radius:10px;border:none;cursor:pointer;font-weight:700;font-size:0.73rem;font-family:inherit;" onmouseover="this.style.background='var(--amber)'" onmouseout="this.style.background='var(--amber-dk)'">💾 Sauver</button>
+            <button onclick="exportProjectData()" style="display:flex;align-items:center;justify-content:center;gap:5px;background:var(--amber-dk);color:#000;padding:8px;border-radius:10px;border:none;cursor:pointer;font-weight:700;font-size:0.73rem;font-family:inherit;" onmouseover="this.style.background='var(--amber)'" onmouseout="this.style.background='var(--amber-dk)'">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Sauver .json
+            </button>
             <label style="display:flex;align-items:center;justify-content:center;gap:5px;background:#18181b;color:var(--muted);padding:8px;border-radius:10px;border:1px solid var(--border2);cursor:pointer;font-weight:700;font-size:0.73rem;font-family:inherit;" onmouseover="this.style.background='var(--border2)';this.style.color='var(--white)'" onmouseout="this.style.background='#18181b';this.style.color='var(--muted)'">📤 Charger<input type="file" accept=".json" style="display:none;" onchange="importProjectData(event)"/></label>
         </div>
-    </div>`;}
+    </div>`;
+}
 
 function buildToolList(type){
     const tools=state.tools.filter(t=>t.type===type);
@@ -556,7 +751,7 @@ function buildSummary(){
 
 // CANVAS
 function drawCanvas(){
-    if(!state.imageSrc) return;
+    if(!state.plans||!state.plans.length) return;
     ctx.clearRect(0,0,els.drawCanvas.width,els.drawCanvas.height);
     // Ordre : Tranchées en fond, puis VRD/Surfaces, puis Pointages au-dessus
     const ORDER = ['TRANCHEE','AREA','VRD','POINT'];
@@ -605,7 +800,7 @@ function drawShape(points,tool,isPreview){
     if(type==='TRANCHEE'){
         // Surligneur large translucide
         ctx.strokeStyle=color+(isPreview?'40':'50');
-        ctx.lineWidth=Math.max(thick*4,24);
+        ctx.lineWidth=Math.max(thick,6);
         ctx.setLineDash(isPreview?[18,6]:[]);
         ctx.beginPath(); ctx.moveTo(points[0].x,points[0].y);
         for(let i=1;i<points.length;i++) ctx.lineTo(points[i].x,points[i].y);
@@ -625,29 +820,45 @@ function drawShape(points,tool,isPreview){
         ctx.closePath();
         if(!isPreview){ctx.fillStyle=color+'30';ctx.fill();}
     }
-    // VRD : trait fin fixe 1.5px, indépendant de la réglette Tranchée
-    const strokeW = type==='VRD' ? 1.5 : thick;
-    ctx.strokeStyle=color; ctx.lineWidth=strokeW;
+    // VRD et AREA : trait fin 1.5px fixe
+    ctx.strokeStyle=color; ctx.lineWidth=1.5;
     ctx.setLineDash(isPreview?[7,4]:[]);
     ctx.stroke(); ctx.setLineDash([]);
     if(!isPreview){
-        ctx.fillStyle='#fff'; ctx.strokeStyle=color; ctx.lineWidth=1.5;
-        points.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,3.5,0,2*Math.PI);ctx.fill();ctx.stroke();});
+        ctx.lineWidth=1;
+        points.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,2.5,0,2*Math.PI);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle=color;ctx.stroke();});
     }
     ctx.restore();
 }
 
 // ACTIONS
 function toggleTab(tabName){
-    if(['VRD','TRANCHEE','AREA','POINT','SUMMARY'].includes(tabName)&&!state.pixelsPerMeter) return;
+    if(['VRD','TRANCHEE','AREA','POINT','ITEM','SUMMARY'].includes(tabName)&&!state.pixelsPerMeter) return;
+
+    // Boutons d'outils : ouvre le creator bar avec le bon type, tiroir ITEM reste visible
+    if(['VRD','TRANCHEE','AREA','POINT'].includes(tabName)){
+        if(state.isEraserMode) state.isEraserMode=false;
+        // Sélectionner le premier outil existant de ce type comme outil actif de dessin
+        const typed=state.tools.filter(t=>t.type===tabName);
+        const currentOk=typed.find(t=>t.id===state.activeToolId);
+        state.activeToolId = currentOk ? state.activeToolId : (typed.length?typed[0].id:null);
+        // Ouvrir le bandeau de création avec ce type
+        openCreator('new', null, tabName);
+        return;
+    }
+
+    // SUMMARY = impression directe
+    if(tabName==='SUMMARY'){
+        if(!state.tools.length) return alert("Aucun outil à imprimer.");
+        generatePrintImage();
+        return;
+    }
+
+    // SETUP et ITEM = tiroir normal
     if(state.activeTab===tabName&&state.isDrawerOpen){ setState({isDrawerOpen:false}); return; }
     let upd={activeTab:tabName,isDrawerOpen:true};
     if(state.isEraserMode) upd.isEraserMode=false;
     if(state.isCreatorOpen&&tabName!==state.activeTab) upd.isCreatorOpen=false;
-    if(['VRD','TRANCHEE','AREA','POINT'].includes(tabName)){
-        const typed=state.tools.filter(t=>t.type===tabName);
-        if(!typed.find(t=>t.id===state.activeToolId)) upd.activeToolId=typed.length?typed[0].id:null;
-    }
     setState(upd);
 }
 function toggleToolVisibility(id){
@@ -681,10 +892,65 @@ async function handleFileUpload(event){
         } else {const reader=new FileReader();reader.onload=e=>loadImageFromUrl(e.target.result,false);reader.readAsDataURL(file);}
     } catch(e){console.error(e);alert("Erreur de chargement.");setState({isLoading:false});}
 }
-function loadImageFromUrl(url,isPdf){const img=new Image();img.onload=()=>setState({imageSrc:url,imageObj:img,imageSize:{w:img.width,h:img.height},isPdf,appState:'SETUP_SCALE',isLoading:false,transform:{scale:1,x:0,y:0}});img.src=url;}
-function applyScaleRatio(){const el=document.getElementById('scaleInput');if(el)state.scaleRatioInput=el.value;const s=parseFloat(state.scaleRatioInput);if(isNaN(s)||s<=0)return alert("Échelle invalide.");setState({pixelsPerMeter:(1000*72*2.5)/(25.4*s),appState:'MEASURE'});toggleTab('VRD');}
-function exportProjectData(){if(!state.imageSrc)return alert("Aucun projet.");setState({isLoading:true});setTimeout(()=>{const d={version:"2.0",imageBase64:state.imageSrc,isPdf:state.isPdf,scaleRatioInput:state.scaleRatioInput,pixelsPerMeter:state.pixelsPerMeter,tools:state.tools,appState:state.appState};const a=document.createElement('a');a.href="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(d));a.download="mapulator_projet.json";a.click();setState({isLoading:false});},100);}
-function importProjectData(event){const file=event.target.files[0];if(!file)return;setState({isLoading:true});const reader=new FileReader();reader.onload=e=>{try{const d=JSON.parse(e.target.result);const img=new Image();img.onload=()=>{setState({imageSrc:d.imageBase64,imageObj:img,imageSize:{w:img.width,h:img.height},isPdf:d.isPdf,scaleRatioInput:d.scaleRatioInput,pixelsPerMeter:d.pixelsPerMeter,tools:d.tools||[],appState:d.appState||'MEASURE',isLoading:false,transform:{scale:1,x:0,y:0}});toggleTab('SUMMARY');};img.onerror=()=>{alert("Erreur image.");setState({isLoading:false});};img.src=d.imageBase64;}catch{alert("Fichier invalide.");setState({isLoading:false});}};reader.readAsText(file);}
+function loadImageFromUrl(src, isPdf){
+    const img=new Image();
+    img.onload=()=>{
+        const isFirst = state.plans.length===0;
+        const newPlan = { id: Date.now().toString(), src, isPdf, opacity:1, w:img.width, h:img.height };
+        const newPlans = [...state.plans, newPlan];
+        const updates = { plans:newPlans, isLoading:false };
+        if(isFirst){
+            updates.imageSize = {w:img.width, h:img.height};
+            updates.appState = 'SETUP_SCALE';
+            updates.transform = {scale:1,x:0,y:0};
+        }
+        setState(updates);
+    };
+    img.src=src;
+}
+function movePlan(i, dir){
+    const plans=[...state.plans];
+    const j=i+dir;
+    if(j<0||j>=plans.length) return;
+    [plans[i],plans[j]]=[plans[j],plans[i]];
+    setState({plans});
+}
+function removePlan(i){
+    const plans=state.plans.filter((_,idx)=>idx!==i);
+    const updates={plans};
+    if(plans.length===0){ updates.appState='UPLOAD'; updates.pixelsPerMeter=null; updates.imageSize={w:0,h:0}; }
+    else { updates.imageSize={w:plans[0].w,h:plans[0].h}; }
+    setState(updates);
+}
+function setPlanOpacity(i, val){
+    const plans=state.plans.map((p,idx)=>idx===i?{...p,opacity:val}:p);
+    state.plans=plans; // mise à jour silencieuse sans renderDOM complet
+    // Mettre à jour juste l'opacité de l'img concernée
+    const imgs=els.canvasContainer.querySelectorAll('img.plan-layer');
+    if(imgs[i]) imgs[i].style.opacity=val;
+}
+function applyScaleRatio(){const el=document.getElementById('scaleInput');if(el)state.scaleRatioInput=el.value;const s=parseFloat(state.scaleRatioInput);if(isNaN(s)||s<=0)return alert("Échelle invalide.");setState({pixelsPerMeter:(1000*72*2.5)/(25.4*s),appState:'MEASURE'});toggleTab('ITEM');}
+function exportProjectData(){if(!state.plans.length)return alert("Aucun projet.");setState({isLoading:true});setTimeout(()=>{const d={version:"3.0",plans:state.plans.map(p=>({src:p.src,isPdf:p.isPdf,opacity:p.opacity,w:p.w,h:p.h})),imageSize:state.imageSize,scaleRatioInput:state.scaleRatioInput,pixelsPerMeter:state.pixelsPerMeter,tools:state.tools,appState:state.appState};const a=document.createElement('a');a.href="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(d));a.download="mapulator_projet.json";a.click();setState({isLoading:false});},100);}
+
+function importProjectData(event){const file=event.target.files[0];if(!file)return;setState({isLoading:true});const reader=new FileReader();reader.onload=e=>{try{const d=JSON.parse(e.target.result);
+    // Support ancien format v1/v2
+    if(d.imageBase64&&!d.plans) d.plans=[{src:d.imageBase64,isPdf:d.isPdf||false,opacity:1,w:0,h:0}];
+    const plans=d.plans||[];
+    if(!plans.length){setState({isLoading:false});return alert("Aucun plan.");}
+    let loaded=0;
+    plans.forEach((plan,i)=>{
+        const img=new Image();
+        img.onload=()=>{
+            plan.w=plan.w||img.width;plan.h=plan.h||img.height;plan.id=Date.now().toString()+i;
+            if(++loaded===plans.length){
+                setState({plans,imageSize:d.imageSize||{w:plans[0].w,h:plans[0].h},scaleRatioInput:d.scaleRatioInput,pixelsPerMeter:d.pixelsPerMeter,tools:d.tools||[],appState:d.appState||'MEASURE',isLoading:false,transform:{scale:1,x:0,y:0}});
+                toggleTab('ITEM');
+            }
+        };
+        img.onerror=()=>{alert("Erreur image plan "+(i+1));setState({isLoading:false});};
+        img.src=plan.src;
+    });
+}catch{alert("Fichier invalide.");setState({isLoading:false});}};reader.readAsText(file);}
 
 // MATHS
 const dist=(a,b)=>Math.sqrt((b.x-a.x)**2+(b.y-a.y)**2);
@@ -692,47 +958,89 @@ const calculateLength=(pts,closed)=>{if(pts.length<2||!state.pixelsPerMeter)retu
 const calculateArea=pts=>{if(pts.length<3||!state.pixelsPerMeter)return 0;let a=0;for(let i=0;i<pts.length;i++){let j=(i+1)%pts.length;a+=pts[i].x*pts[j].y-pts[j].x*pts[i].y;}return Math.abs(a)/2/state.pixelsPerMeter**2;};
 const distToSeg=(p,v,w)=>{const l2=(w.x-v.x)**2+(w.y-v.y)**2;if(!l2)return dist(p,v);let t=Math.max(0,Math.min(1,((p.x-v.x)*(w.x-v.x)+(p.y-v.y)*(w.y-v.y))/l2));return dist(p,{x:v.x+t*(w.x-v.x),y:v.y+t*(w.y-v.y)});};
 
-// IMPRESSION
+// IMPRESSION — groupée par indice
 function generatePrintImage(){
-    const c=els.printCanvas,x=c.getContext('2d'),pad=50,rh=32;
-    const rows=[];
-    state.tools.forEach(t=>{let val='',unit='';
-        if(t.type==='VRD'){val=t.measurements.reduce((a,p)=>a+calculateLength(p,false),0).toFixed(2);unit='ml';}
-        else if(t.type==='TRANCHEE'){const l=t.measurements.reduce((a,p)=>a+calculateLength(p,false),0);val=(l*t.trancheeW*t.trancheeD).toFixed(2);unit='m³';}
-        else if(t.type==='AREA'){val=t.measurements.reduce((a,p)=>a+calculateArea(p),0).toFixed(2);unit='m²';}
-        else{val=t.measurements.length;unit='u';}
-        rows.push({name:t.name,type:t.type,val,unit,maj:(parseFloat(val)*1.1).toFixed(2)});});
-    c.width=800;c.height=220+rows.length*rh+60;
-    x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);
-    x.fillStyle='#000';x.font='bold 20px sans-serif';x.fillText('MAPULATOR — RÉCAPITULATIF',pad,52);
-    x.font='12px sans-serif';x.fillStyle='#777';x.fillText('Généré le '+new Date().toLocaleString('fr-FR'),pad,76);
-    x.fillStyle='#000';x.font='bold 10px sans-serif';x.textAlign='left';x.fillText('DÉSIGNATION',pad,125);
-    x.textAlign='right';x.fillText('NET',530,125);x.fillText('MAJORÉ +10%',730,125);
-    x.beginPath();x.moveTo(pad,132);x.lineTo(730,132);x.strokeStyle='#ddd';x.lineWidth=1;x.stroke();
-    x.textAlign='left';let y=158;
-    if(!rows.length){x.font='italic 12px sans-serif';x.fillStyle='#aaa';x.fillText('Aucune donnée.',pad,y);}
-    else rows.forEach((r,i)=>{
-        if(i%2===0){x.fillStyle='#f8f8f8';x.fillRect(pad-8,y-20,730-pad+16,rh);}
-        const pfx={'VRD':'— ','TRANCHEE':'▬ ','AREA':'▲ ','POINT':'● '}[r.type]||'';
-        x.fillStyle='#000';x.font='bold 12px sans-serif';x.textAlign='left';x.fillText(pfx+r.name,pad,y);
-        x.textAlign='right';x.font='12px monospace';x.fillStyle='#555';x.fillText(r.val+' '+r.unit,530,y);
-        x.font='bold 12px monospace';x.fillStyle='#b45309';x.fillText(r.maj+' '+r.unit,730,y);y+=rh;});
-    const a=document.createElement('a');a.download=`Mapulator_${new Date().toISOString().slice(0,10)}.png`;a.href=c.toDataURL('image/png');a.click();
+    const c=els.printCanvas, x=c.getContext('2d'), pad=50, rh=28, gapH=20;
+    const TYPE_UNIT={VRD:'ml',TRANCHEE:'m³',AREA:'m²',POINT:'u'};
+    const TYPE_LABEL={VRD:'VRD',TRANCHEE:'Tranchée',AREA:'Surface',POINT:'Pointage'};
+
+    // Grouper par indice
+    const groups={};
+    state.tools.forEach(t=>{
+        const key=(t.indice&&t.indice.trim())?t.indice.trim().toUpperCase():'DIVERS';
+        if(!groups[key]) groups[key]=[];
+        groups[key].push(t);
+    });
+    const keys=Object.keys(groups).filter(k=>k!=='DIVERS').sort();
+    if(groups['DIVERS']) keys.push('DIVERS');
+
+    // Hauteur totale
+    let totalRows=0; keys.forEach(k=>totalRows+=1+groups[k].length);
+    c.width=800; c.height=140+totalRows*rh+keys.length*gapH+40;
+    x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height);
+
+    // Titre
+    x.fillStyle='#000'; x.font='bold 18px sans-serif'; x.textAlign='left';
+    x.fillText('MAPULATOR — RÉCAPITULATIF PAR INDICE',pad,44);
+    x.font='11px sans-serif'; x.fillStyle='#888';
+    x.fillText('Généré le '+new Date().toLocaleString('fr-FR'),pad,62);
+
+    // En-têtes colonnes
+    x.fillStyle='#444'; x.font='bold 9px sans-serif'; x.textAlign='left';
+    x.fillText('DÉSIGNATION',pad,100);
+    x.textAlign='right';
+    x.fillText('TYPE',430,100); x.fillText('NET',570,100); x.fillText('MAJORÉ +10%',720,100);
+    x.beginPath();x.moveTo(pad,106);x.lineTo(720,106);x.strokeStyle='#ccc';x.lineWidth=1;x.stroke();
+
+    let y=128;
+    keys.forEach(key=>{
+        // Header indice
+        x.fillStyle='#1a1a1a'; x.fillRect(pad-8,y-17,720-pad+16,24);
+        x.fillStyle='#fff'; x.font='bold 11px sans-serif'; x.textAlign='left';
+        x.fillText(key, pad+4, y);
+        y+=rh;
+
+        groups[key].forEach((t,i)=>{
+            let net=0;
+            if(t.type==='VRD') net=t.measurements.reduce((a,p)=>a+calculateLength(p,false),0);
+            else if(t.type==='TRANCHEE'){const l=t.measurements.reduce((a,p)=>a+calculateLength(p,false),0);net=l*(t.trancheeW||0.8)*(t.trancheeD||1.2);}
+            else if(t.type==='AREA') net=t.measurements.reduce((a,p)=>a+calculateArea(p),0);
+            else net=t.measurements.length;
+            const unit=TYPE_UNIT[t.type]||'';
+            const maj=net*1.1;
+
+            if(i%2===0){x.fillStyle='#f7f7f7';x.fillRect(pad-4,y-18,720-pad+8,rh);}
+            // Pastille couleur
+            x.fillStyle=t.color;x.beginPath();x.arc(pad+5,y-7,3.5,0,2*Math.PI);x.fill();
+            x.fillStyle='#222';x.font='11px sans-serif';x.textAlign='left';
+            x.fillText(t.name,pad+16,y);
+            x.textAlign='right';x.fillStyle='#888';x.font='9px sans-serif';
+            x.fillText(TYPE_LABEL[t.type]||'',430,y);
+            x.font='11px monospace';x.fillStyle='#333';
+            x.fillText(net.toFixed(2)+' '+unit,570,y);
+            x.font='bold 11px monospace';x.fillStyle='#b45309';
+            x.fillText(maj.toFixed(2)+' '+unit,720,y);
+            y+=rh;
+        });
+        y+=gapH;
+    });
+
+    const a=document.createElement('a');
+    a.download=`Mapulator_${new Date().toISOString().slice(0,10)}.png`;
+    a.href=c.toDataURL('image/png'); a.click();
 }
 
 // INTERACTIONS
 function getCoords(e){const r=els.drawCanvas.getBoundingClientRect();return{x:(e.clientX-r.left)*(els.drawCanvas.width/r.width),y:(e.clientY-r.top)*(els.drawCanvas.height/r.height)};}
 function toggleFullScreen(){const e=document.documentElement,isFs=document.fullscreenElement||document.webkitFullscreenElement;if(!isFs)(e.requestFullscreen||e.webkitRequestFullscreen||function(){alert('Non supporté')}).call(e);else(document.exitFullscreen||document.webkitExitFullscreen).call(document);}
 ['fullscreenchange','webkitfullscreenchange'].forEach(ev=>document.addEventListener(ev,()=>{const btn=document.getElementById('btn-fs');if(btn)btn.querySelector('svg').innerHTML=(document.fullscreenElement||document.webkitFullscreenElement)?'<path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 0 2-2h3M3 16h3a2 2 0 0 0 2 2v3" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>':'<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>';}));
-function handleButtonZoom(f){if(!state.imageSrc)return;const ns=Math.min(Math.max(0.1,state.transform.scale*f),20);const r=els.workspace.getBoundingClientRect(),cx=r.width/2,cy=r.height/2,ratio=ns/state.transform.scale;setState({transform:{scale:ns,x:cx-(cx-state.transform.x)*ratio,y:cy-(cy-state.transform.y)*ratio}});}
-els.workspace.addEventListener('wheel',e=>{if(!state.imageSrc)return;e.preventDefault();const d=-e.deltaY*0.0015,ns=Math.min(Math.max(0.1,state.transform.scale*Math.exp(d)),20);const r=els.workspace.getBoundingClientRect(),ratio=ns/state.transform.scale;setState({transform:{scale:ns,x:(e.clientX-r.left)-((e.clientX-r.left)-state.transform.x)*ratio,y:(e.clientY-r.top)-((e.clientY-r.top)-state.transform.y)*ratio}});},{passive:false});
+function handleButtonZoom(f){if(!state.plans?.length)return;const ns=Math.min(Math.max(0.1,state.transform.scale*f),20);const r=els.workspace.getBoundingClientRect(),cx=r.width/2,cy=r.height/2,ratio=ns/state.transform.scale;setState({transform:{scale:ns,x:cx-(cx-state.transform.x)*ratio,y:cy-(cy-state.transform.y)*ratio}});}
+els.workspace.addEventListener('wheel',e=>{if(!state.plans?.length)return;e.preventDefault();const d=-e.deltaY*0.0015,ns=Math.min(Math.max(0.1,state.transform.scale*Math.exp(d)),20);const r=els.workspace.getBoundingClientRect(),ratio=ns/state.transform.scale;setState({transform:{scale:ns,x:(e.clientX-r.left)-((e.clientX-r.left)-state.transform.x)*ratio,y:(e.clientY-r.top)-((e.clientY-r.top)-state.transform.y)*ratio}});},{passive:false});
 els.workspace.addEventListener('pointerdown',e=>{if(e.button===1||(e.button===0&&e.altKey)){e.preventDefault();setState({isPanning:true,panStart:{x:e.clientX-state.transform.x,y:e.clientY-state.transform.y}});}});
 els.workspace.addEventListener('pointermove',e=>{
     if(state.isPanning){
-        // Le pan modifie le transform → renderDOM nécessaire pour repositionner le canvasContainer
         setState({transform:{...state.transform,x:e.clientX-state.panStart.x,y:e.clientY-state.panStart.y}});
-    } else if(state.imageSrc){
-        // Mise à jour silencieuse : pas de renderDOM, juste redessiner le canvas
+    } else if(state.plans?.length){
         state.mousePos = getCoords(e);
         drawCanvas();
     }
@@ -746,11 +1054,12 @@ els.drawCanvas.addEventListener('click',e=>{
         for(let t=newTools.length-1;t>=0&&!hit;t--){let meas=[...newTools[t].measurements];for(let m=meas.length-1;m>=0;m--){let pts=meas[m],isHit=false;if(newTools[t].type==='POINT'){if(pts.length&&dist(pt,pts[0])<=16)isHit=true;}else{for(let i=0;i<pts.length-1;i++)if(distToSeg(pt,pts[i],pts[i+1])<=16)isHit=true;if(newTools[t].type==='AREA'&&pts.length>=3&&distToSeg(pt,pts[pts.length-1],pts[0])<=16)isHit=true;}if(isHit){meas.splice(m,1);newTools[t]={...newTools[t],measurements:meas};hit=true;break;}}}
         if(hit)setState({tools:newTools}); return;
     }
-    if(state.appState==='MEASURE'&&['VRD','TRANCHEE','AREA','POINT'].includes(state.activeTab)){
-        if(!state.activeToolId){alert("Sélectionnez un outil.");setState({isDrawerOpen:true});return;}
-        if(state.activeTab==='POINT'){setState({tools:state.tools.map(t=>t.id===state.activeToolId?{...t,measurements:[...t.measurements,[pt]]}:t)});return;}
+    if(state.appState==='MEASURE'){
+        const activeTool=state.tools.find(t=>t.id===state.activeToolId);
+        if(!activeTool||!['VRD','TRANCHEE','AREA','POINT'].includes(activeTool.type)) return;
+        if(activeTool.type==='POINT'){setState({tools:state.tools.map(t=>t.id===state.activeToolId?{...t,measurements:[...t.measurements,[pt]]}:t)});return;}
         let upd={currentLine:[...state.currentLine,pt]};
-        if(state.currentLine.length===0)upd.isDrawerOpen=false;
+        if(state.currentLine.length===0) upd.isDrawerOpen=false;
         setState(upd);
     }
 });

@@ -165,6 +165,38 @@
         .accord-chevron { transition: transform 0.18s; flex-shrink: 0; }
         .accord-chevron.open { transform: rotate(90deg); }
 
+        .folder-block { border:1px solid #222226; border-radius:13px; overflow:visible; margin-bottom:0; transition:border-color 0.15s; position:relative; }
+        .folder-block.drag-over { border-color:var(--amber-dk) !important; background:#0f0a00; }
+        .folder-header { display:flex;align-items:center;gap:8px;padding:9px 12px;background:#141416;cursor:pointer;user-select:none;transition:background 0.12s;border-radius:13px; }
+        .folder-header.open-body { border-radius:13px 13px 0 0; }
+        .folder-header:hover { background:#1a1a1e; }
+        .folder-body { padding:8px; display:flex; flex-direction:column; gap:6px; background:#141416; border-radius:0 0 13px 13px; border-top:1px solid #222226; }
+        .folder-drop-zone { min-height:28px;border:1.5px dashed var(--border2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:var(--muted);transition:all 0.15s; }
+        .folder-drop-zone.drag-over { border-color:var(--amber-dk);color:var(--amber);background:#0f0a00; }
+        .folder-menu {
+            position:absolute; right:8px; top:42px;
+            background:#1a1a1e; border:1px solid var(--border2);
+            border-radius:10px; padding:5px; z-index:200;
+            display:flex; flex-direction:column; gap:3px;
+            box-shadow:0 8px 24px rgba(0,0,0,0.7);
+            min-width:130px;
+        }
+        .folder-menu-btn {
+            display:flex; align-items:center; gap:7px;
+            padding:6px 10px; border-radius:7px; border:none;
+            background:transparent; color:var(--text);
+            font-family:'Comfortaa',cursive; font-size:0.73rem; font-weight:700;
+            cursor:pointer; transition:background 0.1s; text-align:left; width:100%;
+        }
+        .folder-menu-btn:hover { background:#27272a; color:#fff; }
+        .folder-menu-btn.danger { color:#f87171; }
+        .folder-menu-btn.danger:hover { background:#450a0a; color:#fca5a5; }
+        .folder-menu-btn.confirm { color:#4ade80; }
+        .folder-menu-btn.confirm:hover { background:#052e16; color:#86efac; }
+        .indice-row { border-radius:8px; transition:opacity 0.15s; }
+        .indice-row.dragging { opacity:0.35; }
+        .indice-row[draggable=true] { cursor:grab; }
+
         /* Boutons outil — icône seule colorée */
         .tb-tool-btn {
             width: 36px; height: 36px; border-radius: 8px;
@@ -311,6 +343,11 @@ let state = {
     scaleRatioInput: '50',
     isLoading: false, pixelsPerMeter: null,
     tools: [], activeToolId: null,
+    folders: [],
+    folderOpen: {},
+    isCreatingFolder: false,
+    renamingFolder: null,   // {id}
+    renamingIndice: null,   // {key} — clé originale de l'indice
     isEraserMode: false, currentLine: [],
     mousePos: {x:0,y:0}, transform: {scale:1,x:0,y:0},
     isPanning: false, panStart: {x:0,y:0}
@@ -520,69 +557,311 @@ function renderDrawerContent() {
     let html='';
     if(state.activeTab==='SETUP') html=buildSetup();
     else if(state.activeTab==='ITEM') html=buildItemTab();
-    els.drawerContent.innerHTML=html;
+    els.drawerContent.innerHTML = html;
+    const fi = document.getElementById('folder-name-input');
+    if (fi) setTimeout(()=>fi.focus(), 30);
+    const rf = document.getElementById('rename-folder-input');
+    if (rf) setTimeout(()=>{rf.focus();rf.select();}, 30);
+    const ri = document.getElementById('rename-indice-input');
+    if (ri) setTimeout(()=>{ri.focus();ri.select();}, 30);
 }
 
 function buildItemTab() {
-    if (!state.tools.length) return `<p style="font-size:0.7rem;color:var(--border2);text-transform:uppercase;letter-spacing:0.07em;text-align:center;padding:24px 0;">Aucun outil créé</p>`;
+    if (!state.folders) state.folders = [];
+    if (!state.folderOpen) state.folderOpen = {};
+    if (!state.accordOpen) state.accordOpen = {};
 
-    // Grouper par indice, Divers en dernier
+    // Grouper outils par indice
     const groups = {};
     state.tools.forEach(t => {
         const key = t.indice && t.indice.trim() ? t.indice.trim().toUpperCase() : '__DIVERS__';
         if (!groups[key]) groups[key] = [];
         groups[key].push(t);
     });
-
     const TYPE_ORDER_ACCORD = {VRD:0, AREA:1, TRANCHEE:2, POINT:3};
-    const sortedKeys = Object.keys(groups).filter(k=>k!=='__DIVERS__').sort();
-    if (groups['__DIVERS__']) sortedKeys.push('__DIVERS__');
-    sortedKeys.forEach(k=>{
-        groups[k] = groups[k].slice().sort((a,b)=>(TYPE_ORDER_ACCORD[a.type]??9)-(TYPE_ORDER_ACCORD[b.type]??9));
+    Object.keys(groups).forEach(k=>{
+        groups[k]=groups[k].slice().sort((a,b)=>(TYPE_ORDER_ACCORD[a.type]??9)-(TYPE_ORDER_ACCORD[b.type]??9));
     });
 
-    // État ouvert des accordéons (persisté dans state.accordOpen)
-    if (!state.accordOpen) state.accordOpen = {};
+    // Indices déjà dans un dossier
+    const inFolder = new Set(state.folders.flatMap(f=>f.indiceKeys||[]));
 
-    const TYPE_ICON = {
-        VRD: `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 12h18"/></svg>`,
-        TRANCHEE: `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="2" y="8" width="20" height="8" rx="2"/></svg>`,
-        AREA: `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="3,19 12,3 21,19"/></svg>`,
-        POINT: `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>`
-    };
+    // Indices libres (pas dans un dossier), triés
+    const allIndices = Object.keys(groups).filter(k=>k!=='__DIVERS__').sort();
+    const freeIndices = allIndices.filter(k=>!inFolder.has(k));
+    if (groups['__DIVERS__'] && !inFolder.has('__DIVERS__')) freeIndices.push('__DIVERS__');
 
-    let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+    const noTools = state.tools.length === 0;
 
-    sortedKeys.forEach(key => {
-        const tools = groups[key];
-        const label = key === '__DIVERS__' ? 'Divers' : key;
-        const isOpen = state.accordOpen[key] !== false; // ouvert par défaut
-        const allHidden = tools.every(t=>t.hidden);
-        const chevron = `<svg class="accord-chevron ${isOpen?'open':''}" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>`;
-        const eyeIcon = allHidden
-            ? `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
-            : `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+    // ─── Bouton / formulaire créer dossier ───
+    const folderBtn = state.isCreatingFolder ? `
+    <div style="display:flex;gap:6px;align-items:center;background:#141416;border:1px solid var(--amber-dk);border-radius:9px;padding:6px 10px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <input id="folder-name-input" class="cr-input" style="flex:1;height:28px;font-size:0.75rem;" placeholder="Nom du dossier…"
+               onkeydown="if(event.key==='Enter'){event.stopPropagation();confirmCreateFolder();}if(event.key==='Escape')setState({isCreatingFolder:false});"
+               oninput="event.stopPropagation()" />
+        <button onclick="confirmCreateFolder()" style="background:var(--amber-dk);color:#000;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-weight:700;font-size:0.72rem;font-family:inherit;">OK</button>
+        <button onclick="setState({isCreatingFolder:false})" style="background:#18181b;color:var(--muted);border:1px solid var(--border2);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:0.72rem;font-family:inherit;">✕</button>
+    </div>` : `
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:0.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;">Structure</span>
+        <button onclick="createFolder()" style="background:none;border:1px solid var(--border2);border-radius:7px;padding:3px 8px;cursor:pointer;color:var(--muted);font-size:0.72rem;font-family:inherit;display:flex;align-items:center;gap:4px;transition:all 0.12s;" onmouseover="this.style.borderColor='var(--amber-dk)';this.style.color='var(--amber)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted)'">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+            Dossier
+        </button>
+    </div>`;
+
+    let html = `<div style="display:flex;flex-direction:column;gap:8px;">${folderBtn}`;
+
+    if (noTools && !state.folders.length) {
+        html += `<p style="font-size:0.7rem;color:var(--border2);text-transform:uppercase;letter-spacing:0.07em;text-align:center;padding:24px 0;">Aucun outil créé</p>`;
+    }
+
+    // ─── Dossiers ───
+    state.folders.forEach(folder => {
+        const isOpen = state.folderOpen[folder.id] !== false;
+        const folderIndices = (folder.indiceKeys||[]).filter(k=>groups[k]);
+        const chevron = `<svg style="transition:transform 0.18s;transform:${isOpen?'rotate(90deg)':'none'};flex-shrink:0;" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>`;
+
+        const isMenuOpen = state.renamingFolder && state.renamingFolder.id === folder.id;
+        const folderTools = folderIndices.flatMap(k => groups[k] || []);
+        const folderAllHidden = folderTools.length > 0 && folderTools.every(t => t.hidden);
+        const folderNameHtml = isMenuOpen
+            ? `<input id="rename-folder-input" class="cr-input" style="flex:1;height:24px;font-size:0.75rem;min-width:0;"
+                   value="${folder.name}"
+                   onkeydown="if(event.key==='Enter'){event.stopPropagation();confirmRenameFolder();}if(event.key==='Escape')setState({renamingFolder:null});"
+                   oninput="event.stopPropagation()" onclick="event.stopPropagation()" />`
+            : `<span style="flex:1;font-weight:700;font-size:0.78rem;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${folder.name}</span>`;
+
+        const folderMenu = isMenuOpen ? `
+            <div class="folder-menu" onclick="event.stopPropagation()">
+                <button class="folder-menu-btn confirm" onclick="event.stopPropagation();confirmRenameFolder()">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    Valider
+                </button>
+                <button class="folder-menu-btn" onclick="event.stopPropagation();printFolder('${folder.id}');setState({renamingFolder:null})">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                    Imprimer
+                </button>
+                <button class="folder-menu-btn danger" onclick="event.stopPropagation();deleteFolder('${folder.id}')">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+                    Supprimer
+                </button>
+            </div>` : '';
 
         html += `
-        <div>
-            <div class="accord-header ${isOpen?'open':''}" onclick="toggleAccord('${key}')">
-                <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
-                    ${chevron}
-                    <span style="font-weight:700;font-size:0.8rem;color:${isOpen?'#fff':'var(--text)'};letter-spacing:0.04em;">${label}</span>
-                    <span style="font-size:0.62rem;color:var(--muted);background:var(--border2);padding:1px 6px;border-radius:4px;">${tools.length}</span>
+        <div class="folder-block" id="folder-${folder.id}"
+             ondragover="event.preventDefault();document.getElementById('folder-${folder.id}').classList.add('drag-over')"
+             ondragleave="document.getElementById('folder-${folder.id}').classList.remove('drag-over')"
+             ondrop="dropOnFolder(event,'${folder.id}')">
+            <div class="folder-header ${isOpen?'open-body':''}" onclick="${isMenuOpen?'':` toggleFolder('${folder.id}')`}">
+                ${chevron}
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                ${folderNameHtml}
+                <span style="font-size:0.6rem;color:var(--muted);background:var(--border2);padding:1px 5px;border-radius:4px;flex-shrink:0;">${folderIndices.length}</span>
+                <button onclick="event.stopPropagation();toggleFolderVisibility('${folder.id}')" title="${folderAllHidden?'Afficher':'Masquer'}" style="background:none;border:none;cursor:pointer;color:${folderAllHidden?'var(--amber)':'var(--muted)'};padding:2px;border-radius:4px;display:flex;align-items:center;flex-shrink:0;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='${folderAllHidden?'var(--amber)':'var(--muted)'}'">
+                    ${folderAllHidden
+                        ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
+                        : `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`}
+                </button>
+                <button onclick="event.stopPropagation();renameFolderUI('${folder.id}')" title="Modifier" style="background:${isMenuOpen?'#27272a':'none'};border:1px solid ${isMenuOpen?'var(--amber-dk)':'transparent'};cursor:pointer;color:${isMenuOpen?'var(--amber)':'var(--muted)'};padding:3px 5px;border-radius:5px;display:flex;align-items:center;flex-shrink:0;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='${isMenuOpen?'var(--amber)':'var(--muted)'}'">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                </button>
+            </div>
+            ${folderMenu}
+            ${isOpen ? `<div class="folder-body">
+                ${folderIndices.length ? folderIndices.map(k=>buildIndiceRow(k, groups[k], folder.id)).join('') : ''}
+                <div class="folder-drop-zone" id="fdz-${folder.id}"
+                     ondragover="event.preventDefault();document.getElementById('fdz-${folder.id}').classList.add('drag-over')"
+                     ondragleave="document.getElementById('fdz-${folder.id}').classList.remove('drag-over')"
+                     ondrop="dropOnFolder(event,'${folder.id}')">
+                    Déposer un indice ici
                 </div>
+            </div>` : ''}
+        </div>`;
+    });
+
+    // ─── Indices libres (hors dossier) ───
+    if (freeIndices.length) {
+        html += `<div style="display:flex;flex-direction:column;gap:6px;" id="free-indices"
+            ondragover="event.preventDefault();document.getElementById('free-indices').style.outline='1px dashed var(--amber-dk)'"
+            ondragleave="document.getElementById('free-indices').style.outline=''"
+            ondrop="dropOnFree(event)">`;
+        freeIndices.forEach(k => { html += buildIndiceRow(k, groups[k], null); });
+        html += `</div>`;
+    }
+
+    html += `</div>`;
+    return html;
+}
+
+function buildIndiceRow(key, tools, folderId) {
+    const label = key === '__DIVERS__' ? 'Divers' : key;
+    const isOpen = state.accordOpen[key] !== false;
+    const allHidden = tools.every(t=>t.hidden);
+    const isRenamingThis = state.renamingIndice && state.renamingIndice.key === key;
+    const chevron = `<svg class="accord-chevron ${isOpen?'open':''}" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>`;
+    const eyeIcon = allHidden
+        ? `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
+        : `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+    const dragHandle = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="cursor:grab;flex-shrink:0;color:var(--muted);"><circle cx="9" cy="7" r="1" fill="currentColor"/><circle cx="9" cy="12" r="1" fill="currentColor"/><circle cx="9" cy="17" r="1" fill="currentColor"/><circle cx="15" cy="7" r="1" fill="currentColor"/><circle cx="15" cy="12" r="1" fill="currentColor"/><circle cx="15" cy="17" r="1" fill="currentColor"/></svg>`;
+
+    const nameHtml = isRenamingThis ? `
+        <input id="rename-indice-input" class="cr-input" style="flex:1;height:22px;font-size:0.73rem;"
+               value="${label}"
+               onkeydown="if(event.key==='Enter'){event.stopPropagation();confirmRenameIndice();}if(event.key==='Escape')setState({renamingIndice:null});"
+               oninput="event.stopPropagation()" onclick="event.stopPropagation()" />
+        <button onclick="event.stopPropagation();confirmRenameIndice()" style="background:var(--amber-dk);color:#000;border:none;border-radius:5px;padding:1px 7px;cursor:pointer;font-weight:700;font-size:0.68rem;font-family:inherit;flex-shrink:0;">OK</button>`
+        : `<span style="font-weight:700;font-size:0.78rem;color:${isOpen?'#fff':'var(--text)'}">${label}</span>
+           <span style="font-size:0.6rem;color:var(--muted);background:var(--border2);padding:1px 5px;border-radius:4px;">${tools.length}</span>`;
+
+    const renameBtn = key !== '__DIVERS__' && !isRenamingThis ? `
+        <button onclick="event.stopPropagation();renameIndiceUI('${key}')" title="Renommer l'indice" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:2px 4px;border-radius:4px;display:flex;align-items:center;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--muted)'">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>` : '';
+
+    return `
+    <div class="indice-row" draggable="${!isRenamingThis}"
+         ondragstart="${isRenamingThis?'event.preventDefault()':` dragIndice(event,'${key}','${folderId||''}')`}"
+         ondragend="this.classList.remove('dragging')">
+        <div class="accord-header ${isOpen?'open':''}" onclick="${isRenamingThis?'':` toggleAccord('${key}')`}" style="gap:6px;">
+            <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0;">
+                ${dragHandle}
+                ${!isRenamingThis ? chevron : ''}
+                ${nameHtml}
+            </div>
+            <div style="display:flex;align-items:center;gap:2px;flex-shrink:0;">
+                ${renameBtn}
                 <button onclick="event.stopPropagation();toggleIndiceVisibility('${key}')" style="background:none;border:none;cursor:pointer;color:${allHidden?'var(--amber)':'var(--muted)'};padding:3px;border-radius:5px;display:flex;align-items:center;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='${allHidden?'var(--amber)':'var(--muted)'}'">
                     ${eyeIcon}
                 </button>
             </div>
-            <div class="accord-body ${isOpen?'open':''}">
-                ${tools.map(tool => buildToolCard(tool)).join('')}
-            </div>
-        </div>`;
-    });
+        </div>
+        <div class="accord-body ${isOpen?'open':''}">
+            ${tools.map(tool=>buildToolCard(tool)).join('')}
+        </div>
+    </div>`;
+}
 
-    html += '</div>';
-    return html;
+// ─── DOSSIERS ───
+function confirmCreateFolder() {
+    const el = document.getElementById('folder-name-input');
+    const name = el ? el.value.trim() : '';
+    if (!name) return;
+    const newFolder = { id: Date.now().toString(), name, indiceKeys: [] };
+    setState({ folders: [...(state.folders||[]), newFolder], isCreatingFolder: false });
+}
+
+function createFolder() {
+    setState({ isCreatingFolder: true });
+}
+
+function toggleFolder(id) {
+    if (!state.folderOpen) state.folderOpen = {};
+    state.folderOpen[id] = state.folderOpen[id] === false ? true : false;
+    renderDrawerContent();
+}
+
+function toggleFolderVisibility(folderId) {
+    const folder = state.folders.find(f=>f.id===folderId);
+    if (!folder) return;
+    const folderIndices = new Set(folder.indiceKeys||[]);
+    const folderTools = state.tools.filter(t=>{
+        const k = t.indice&&t.indice.trim() ? t.indice.trim().toUpperCase() : '__DIVERS__';
+        return folderIndices.has(k);
+    });
+    const allHidden = folderTools.every(t=>t.hidden);
+    const ids = new Set(folderTools.map(t=>t.id));
+    const newTools = state.tools.map(t => ids.has(t.id) ? {...t, hidden:!allHidden} : t);
+    setState({tools: newTools});
+}
+
+function deleteFolder(id) {
+    if (!confirm("Supprimer ce dossier ? Les indices retournent à la racine.")) return;
+    setState({ folders: state.folders.filter(f=>f.id!==id) });
+}
+
+function renameFolderUI(id) {
+    setState({ renamingFolder: { id } });
+}
+function renameIndiceUI(key) {
+    setState({ renamingIndice: { key } });
+}
+function confirmRenameIndice() {
+    const el = document.getElementById('rename-indice-input');
+    const newName = el ? el.value.trim().toUpperCase() : '';
+    if (!newName || !state.renamingIndice) { setState({ renamingIndice: null }); return; }
+    const oldKey = state.renamingIndice.key;
+    if (newName === oldKey) { setState({ renamingIndice: null }); return; }
+    // Renommer l'indice dans tous les outils
+    const newTools = state.tools.map(t=>{
+        const tKey = t.indice&&t.indice.trim() ? t.indice.trim().toUpperCase() : '__DIVERS__';
+        return tKey===oldKey ? {...t, indice: newName==='__DIVERS__' ? '' : newName} : t;
+    });
+    // Renommer dans les dossiers
+    const newFolders = state.folders.map(f=>({...f, indiceKeys: f.indiceKeys.map(k=>k===oldKey?newName:k)}));
+    // Mettre à jour accordOpen
+    if (state.accordOpen && state.accordOpen[oldKey] !== undefined) {
+        state.accordOpen[newName] = state.accordOpen[oldKey];
+        delete state.accordOpen[oldKey];
+    }
+    setState({ tools: newTools, folders: newFolders, renamingIndice: null });
+}
+
+function confirmRenameFolder() {
+    const el = document.getElementById('rename-folder-input');
+    const name = el ? el.value.trim() : '';
+    if (!name || !state.renamingFolder) { setState({ renamingFolder: null }); return; }
+    setState({ folders: state.folders.map(f=>f.id===state.renamingFolder.id?{...f,name}:f), renamingFolder: null });
+}
+
+// ─── DRAG & DROP ───
+let _dragging = null; // {key, fromFolderId}
+
+function dragIndice(event, key, fromFolderId) {
+    _dragging = { key, fromFolderId: fromFolderId || null };
+    event.dataTransfer.effectAllowed = 'move';
+    event.target.classList.add('dragging');
+}
+
+function dropOnFolder(event, toFolderId) {
+    event.preventDefault();
+    document.querySelectorAll('.folder-block,.folder-drop-zone').forEach(el=>el.classList.remove('drag-over'));
+    if (!_dragging) return;
+    const { key, fromFolderId } = _dragging;
+    _dragging = null;
+    if (fromFolderId === toFolderId) return;
+    const newFolders = state.folders.map(f=>{
+        if (f.id === fromFolderId) return {...f, indiceKeys: f.indiceKeys.filter(k=>k!==key)};
+        if (f.id === toFolderId)   return {...f, indiceKeys: [...(f.indiceKeys||[]), key]};
+        return f;
+    });
+    setState({ folders: newFolders });
+}
+
+function dropOnFree(event) {
+    event.preventDefault();
+    document.getElementById('free-indices') && (document.getElementById('free-indices').style.outline='');
+    if (!_dragging || !_dragging.fromFolderId) { _dragging=null; return; }
+    const { key, fromFolderId } = _dragging; _dragging=null;
+    const newFolders = state.folders.map(f=>
+        f.id===fromFolderId ? {...f, indiceKeys: f.indiceKeys.filter(k=>k!==key)} : f
+    );
+    setState({ folders: newFolders });
+}
+
+// ─── PRINT DOSSIER ───
+async function printFolder(folderId) {
+    const folder = state.folders.find(f=>f.id===folderId);
+    if (!folder) return;
+    const folderIndices = new Set(folder.indiceKeys);
+    // Filtrer les outils du dossier
+    const filteredTools = state.tools.filter(t=>{
+        const key = t.indice&&t.indice.trim() ? t.indice.trim().toUpperCase() : '__DIVERS__';
+        return folderIndices.has(key);
+    });
+    if (!filteredTools.length) return alert("Ce dossier ne contient aucun outil.");
+    await generatePrintImageForTools(filteredTools, folder.name);
 }
 
 function toggleAccord(key) {
@@ -590,7 +869,6 @@ function toggleAccord(key) {
     state.accordOpen[key] = state.accordOpen[key] === false ? true : false;
     renderDrawerContent();
 }
-
 function toggleIndiceVisibility(key) {
     const realKey = key === '__DIVERS__' ? '' : key;
     const tools = state.tools.filter(t=>(t.indice||'').toUpperCase()===(realKey||'').toUpperCase()||(realKey===''&&!t.indice));
@@ -933,7 +1211,7 @@ function setPlanOpacity(i, val){
     if(imgs[i]) imgs[i].style.opacity=val;
 }
 function applyScaleRatio(){const el=document.getElementById('scaleInput');if(el)state.scaleRatioInput=el.value;const s=parseFloat(state.scaleRatioInput);if(isNaN(s)||s<=0)return alert("Échelle invalide.");setState({pixelsPerMeter:(1000*72*2.5)/(25.4*s),appState:'MEASURE'});toggleTab('ITEM');}
-function exportProjectData(){if(!state.plans.length)return alert("Aucun projet.");setState({isLoading:true});setTimeout(()=>{const d={version:"3.0",plans:state.plans.map(p=>({src:p.src,isPdf:p.isPdf,opacity:p.opacity,w:p.w,h:p.h})),imageSize:state.imageSize,scaleRatioInput:state.scaleRatioInput,pixelsPerMeter:state.pixelsPerMeter,tools:state.tools,appState:state.appState};const a=document.createElement('a');a.href="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(d));a.download="mapulator_projet.json";a.click();setState({isLoading:false});},100);}
+function exportProjectData(){if(!state.plans.length)return alert("Aucun projet.");setState({isLoading:true});setTimeout(()=>{const d={version:"3.0",plans:state.plans.map(p=>({src:p.src,isPdf:p.isPdf,opacity:p.opacity,w:p.w,h:p.h})),imageSize:state.imageSize,scaleRatioInput:state.scaleRatioInput,pixelsPerMeter:state.pixelsPerMeter,tools:state.tools,folders:state.folders||[],appState:state.appState};const a=document.createElement('a');a.href="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(d));a.download="mapulator_projet.json";a.click();setState({isLoading:false});},100);}
 
 function importProjectData(event){const file=event.target.files[0];if(!file)return;setState({isLoading:true});const reader=new FileReader();reader.onload=e=>{try{const d=JSON.parse(e.target.result);
     // Support ancien format v1/v2
@@ -946,7 +1224,7 @@ function importProjectData(event){const file=event.target.files[0];if(!file)retu
         img.onload=()=>{
             plan.w=plan.w||img.width;plan.h=plan.h||img.height;plan.id=Date.now().toString()+i;
             if(++loaded===plans.length){
-                setState({plans,imageSize:d.imageSize||{w:plans[0].w,h:plans[0].h},scaleRatioInput:d.scaleRatioInput,pixelsPerMeter:d.pixelsPerMeter,tools:d.tools||[],appState:d.appState||'MEASURE',isLoading:false,transform:{scale:1,x:0,y:0}});
+                setState({plans,imageSize:d.imageSize||{w:plans[0].w,h:plans[0].h},scaleRatioInput:d.scaleRatioInput,pixelsPerMeter:d.pixelsPerMeter,tools:d.tools||[],folders:d.folders||[],appState:d.appState||'MEASURE',isLoading:false,transform:{scale:1,x:0,y:0}});
                 toggleTab('ITEM');
             }
         };
@@ -963,6 +1241,134 @@ const distToSeg=(p,v,w)=>{const l2=(w.x-v.x)**2+(w.y-v.y)**2;if(!l2)return dist(
 
 // IMPRESSION — groupée par indice
 async function generatePrintImage(){
+    if (state.folders && state.folders.length > 0) {
+        // PDF structuré par dossiers
+        await generatePrintByFolders();
+    } else {
+        await generatePrintImageForTools(state.tools, 'MAPULATOR');
+    }
+}
+
+async function generatePrintByFolders(){
+    if (!window.jspdf) {
+        await new Promise((res,rej)=>{
+            const s=document.createElement('script');
+            s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+            s.onload=res; s.onerror=rej; document.head.appendChild(s);
+        });
+    }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+    const TYPE_UNIT  = {VRD:'ml', TRANCHEE:'m³', AREA:'m²', POINT:'u'};
+    const TYPE_LABEL = {VRD:'VRD', TRANCHEE:'Tranchée', AREA:'Surface', POINT:'Pointage'};
+    const TYPE_ORDER = {VRD:0, AREA:1, TRANCHEE:2, POINT:3};
+    const W=210, pad=14, colType=130, colNet=158, colMaj=196;
+    const RH=6.5, GH=5;
+
+    // Recueillir tous les indices dans des dossiers
+    const inFolder = new Set(state.folders.flatMap(f=>f.indiceKeys||[]));
+
+    // Grouper tous les outils par indice
+    const allGroups = {};
+    state.tools.forEach(t=>{
+        const k = t.indice&&t.indice.trim() ? t.indice.trim().toUpperCase() : '__DIVERS__';
+        if (!allGroups[k]) allGroups[k]=[];
+        allGroups[k].push(t);
+    });
+    Object.keys(allGroups).forEach(k=>{
+        allGroups[k]=allGroups[k].slice().sort((a,b)=>(TYPE_ORDER[a.type]??9)-(TYPE_ORDER[b.type]??9));
+    });
+
+    // Sections : dossiers d'abord, puis indices libres
+    const sections = [
+        ...state.folders.map(f=>({ type:'folder', name:f.name, keys:(f.indiceKeys||[]).filter(k=>allGroups[k]) })),
+    ];
+    const freeKeys = Object.keys(allGroups).filter(k=>!inFolder.has(k)&&k!=='__DIVERS__').sort();
+    if (allGroups['__DIVERS__']&&!inFolder.has('__DIVERS__')) freeKeys.push('__DIVERS__');
+    if (freeKeys.length) sections.push({ type:'free', name:'Indices libres', keys:freeKeys });
+
+    let firstPage = true;
+
+    const drawPageHeader = (title, subtitle) => {
+        doc.setFillColor(15,15,15); doc.rect(0,0,210,22,'F');
+        doc.setTextColor(245,158,11); doc.setFont('helvetica','bold'); doc.setFontSize(13);
+        doc.text('MAPULATOR', pad, 10);
+        doc.setTextColor(200,200,200); doc.setFont('helvetica','normal'); doc.setFontSize(8);
+        doc.text(subtitle, pad, 16);
+        doc.setTextColor(120,120,120);
+        doc.text('Généré le '+new Date().toLocaleString('fr-FR'), W-pad, 16, {align:'right'});
+    };
+
+    const drawColHeaders = (y) => {
+        doc.setFillColor(240,240,240); doc.rect(pad,y-4,W-pad*2,7,'F');
+        doc.setTextColor(80,80,80); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
+        doc.text('DÉSIGNATION',pad+5,y);
+        doc.text('TYPE',colType,y,{align:'right'});
+        doc.text('NET',colNet,y,{align:'right'});
+        doc.text('+10%',colMaj,y,{align:'right'});
+    };
+
+    for (const section of sections) {
+        if (!section.keys.length) continue;
+        if (!firstPage) doc.addPage();
+        firstPage = false;
+
+        const subtitle = section.type==='folder' ? `Dossier — ${section.name}` : 'Indices libres';
+        drawPageHeader('MAPULATOR', subtitle);
+
+        let y = 30;
+        drawColHeaders(y); y += 7;
+
+        for (const key of section.keys) {
+            const tools = allGroups[key] || [];
+            if (!tools.length) continue;
+            if (y > 265) { doc.addPage(); y = 20; drawColHeaders(y); y += 7; }
+
+            // Header indice
+            doc.setFillColor(25,25,25); doc.rect(pad,y-4,W-pad*2,7,'F');
+            doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(8);
+            doc.text(key==='__DIVERS__'?'Divers':key, pad+3, y);
+            y += 8;
+
+            tools.forEach((t,i) => {
+                if (y > 275) { doc.addPage(); y = 20; drawColHeaders(y); y += 7; }
+                let net=0;
+                if(t.type==='VRD') net=t.measurements.reduce((a,p)=>a+calculateLength(p,false),0);
+                else if(t.type==='TRANCHEE'){const l=t.measurements.reduce((a,p)=>a+calculateLength(p,false),0);net=l*(t.trancheeW||0.8)*(t.trancheeD||1.2);}
+                else if(t.type==='AREA') net=t.measurements.reduce((a,p)=>a+calculateArea(p),0);
+                else net=t.measurements.length;
+                const unit=TYPE_UNIT[t.type]||'';
+                const maj = t.type==='POINT' ? null : net*1.1;
+                if(i%2===0){doc.setFillColor(250,250,250);doc.rect(pad,y-4,W-pad*2,RH,'F');}
+                const rgb=hexToRgb(t.color);
+                doc.setFillColor(rgb.r,rgb.g,rgb.b); doc.circle(pad+3,y-1,1.5,'F');
+                doc.setTextColor(30,30,30); doc.setFont('helvetica','normal'); doc.setFontSize(8);
+                doc.text(t.name, pad+7, y);
+                doc.setTextColor(130,130,130); doc.setFontSize(7);
+                doc.text(TYPE_LABEL[t.type]||'', colType, y, {align:'right'});
+                doc.setTextColor(50,50,50); doc.setFontSize(8);
+                doc.text(net.toFixed(2)+' '+unit, colNet, y, {align:'right'});
+                doc.setTextColor(180,82,9); doc.setFont('helvetica','bold');
+                doc.text(maj!==null ? maj.toFixed(2)+' '+unit : '—', colMaj, y, {align:'right'});
+                y += RH;
+            });
+            y += GH;
+        }
+    }
+
+    // Pagination
+    const pages=doc.getNumberOfPages();
+    for(let p=1;p<=pages;p++){
+        doc.setPage(p);
+        doc.setDrawColor(220,220,220); doc.setLineWidth(0.3); doc.line(pad,287,W-pad,287);
+        doc.setTextColor(160,160,160); doc.setFont('helvetica','normal'); doc.setFontSize(7);
+        doc.text(`Page ${p} / ${pages}`, W/2, 291, {align:'center'});
+    }
+
+    doc.save(`Mapulator_${new Date().toISOString().slice(0,10)}.pdf`);
+}
+
+async function generatePrintImageForTools(tools, title){
     // Charger jsPDF si pas encore disponible
     if (!window.jspdf) {
         await new Promise((res,rej)=>{
@@ -981,7 +1387,7 @@ async function generatePrintImage(){
     // Grouper par indice puis trier : VRD(ml) → AREA(m²) → TRANCHEE(m³) → POINT(u)
     const TYPE_ORDER = {VRD:0, AREA:1, TRANCHEE:2, POINT:3};
     const groups={};
-    state.tools.forEach(t=>{
+    tools.forEach(t=>{
         const key=(t.indice&&t.indice.trim())?t.indice.trim().toUpperCase():'DIVERS';
         if(!groups[key]) groups[key]=[];
         groups[key].push(t);
@@ -997,9 +1403,9 @@ async function generatePrintImage(){
     doc.rect(0,0,210,22,'F');
     doc.setTextColor(245,158,11);
     doc.setFont('helvetica','bold'); doc.setFontSize(13);
-    doc.text('MAPULATOR',pad,10);
+    doc.text('MAPULATOR', pad, 10);
     doc.setTextColor(200,200,200); doc.setFont('helvetica','normal'); doc.setFontSize(8);
-    doc.text('Récapitulatif par indice',pad,16);
+    doc.text(title==='MAPULATOR' ? 'Récapitulatif par indice' : 'Dossier — '+title, pad, 16);
     doc.setTextColor(120,120,120);
     doc.text('Généré le '+new Date().toLocaleString('fr-FR'), W-pad, 16, {align:'right'});
 

@@ -1219,7 +1219,7 @@ function setPlanScale(i, val) {
     // Si plan 0 change, mettre à jour pixelsPerMeter
     if (i === 0) {
         const ppm = (1000*72*2.5)/(25.4*s);
-        setState({ plans: newPlans, scaleRatioInput: String(s), pixelsPerMeter: ppm });
+        setState({ plans: newPlans, scaleRatioInput: String(s), pixelsPerMeter: ppm, appState:'MEASURE' });
     } else {
         setState({ plans: newPlans });
     }
@@ -1260,19 +1260,27 @@ function loadImageFromUrl(src, isPdf){
     const img=new Image();
     img.onload=()=>{
         const isFirst = state.plans.length===0;
+        const scaleRatio = state.scaleRatioInput || '50';
         const newPlan = {
             id: Date.now().toString(), src, isPdf, opacity:1,
             w:img.width, h:img.height,
             name: `Plan ${state.plans.length + 1}`,
-            scaleRatio: state.scaleRatioInput || '50',
+            scaleRatio,
             offsetX: 0, offsetY: 0
         };
         const newPlans = [...state.plans, newPlan];
         const updates = { plans:newPlans, isLoading:false };
         if(isFirst){
             updates.imageSize = {w:img.width, h:img.height};
-            updates.appState = 'SETUP_SCALE';
             updates.transform = {scale:1,x:0,y:0};
+            // Calculer pixelsPerMeter automatiquement depuis scaleRatio
+            const s = parseFloat(scaleRatio);
+            if(s > 0) {
+                updates.pixelsPerMeter = (1000*72*2.5)/(25.4*s);
+                updates.appState = 'MEASURE';
+            } else {
+                updates.appState = 'SETUP_SCALE';
+            }
         }
         setState(updates);
     };

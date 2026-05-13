@@ -411,7 +411,7 @@ function renderDOM() {
         // Curseur
         const isSuperMode = state.superpositionMode;
         const at = state.tools.find(t=>t.id===state.activeToolId);
-        const drawMode = state.appState==='MEASURE' && at && ['VRD','TRANCHEE','AREA','POINT'].includes(at.type);
+        const drawMode = state.pixelsPerMeter && at && ['VRD','TRANCHEE','AREA','POINT'].includes(at.type);
         els.drawCanvas.style.cursor = state.isPanning ? 'grabbing' : (isSuperMode ? 'cell' : (state.isEraserMode||drawMode ? 'crosshair' : 'grab'));
     } else {
         els.canvasContainer.style.display = 'none';
@@ -1082,18 +1082,27 @@ function drawCanvas(){
     const ORDER = ['TRANCHEE','AREA','VRD','POINT'];
     [...state.tools].sort((a,b)=>ORDER.indexOf(a.type)-ORDER.indexOf(b.type))
         .forEach(tool=>{ if(!tool.hidden) tool.measurements.forEach(pts=>drawShape(pts,tool,false)); });
-    if(state.currentLine.length>0&&state.appState==='MEASURE'&&!state.isEraserMode){
+    if(state.currentLine.length>0&&state.pixelsPerMeter&&!state.isEraserMode){
         const at=state.tools.find(t=>t.id===state.activeToolId);
         if(at) drawShape([...state.currentLine,state.mousePos],at,true);
     }
-    // Repère superposition
+    // Réticule superposition (suit le curseur)
+    if(state.superpositionMode){
+        ctx.strokeStyle='rgba(245,158,11,0.8)'; ctx.lineWidth=1;
+        const mx=state.mousePos.x, my=state.mousePos.y;
+        ctx.beginPath(); ctx.moveTo(mx-20,my); ctx.lineTo(mx+20,my); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(mx,my-20); ctx.lineTo(mx,my+20); ctx.stroke();
+        ctx.beginPath(); ctx.arc(mx,my,4,0,2*Math.PI); ctx.stroke();
+    }
+    // Point 1 capturé
     if(state.superpositionMode && state.superpositionClick1){
         const c=state.superpositionClick1;
-        ctx.strokeStyle='#f59e0b'; ctx.lineWidth=1.5;
-        ctx.beginPath(); ctx.arc(c.x,c.y,10,0,2*Math.PI); ctx.stroke();
+        ctx.strokeStyle='#f59e0b'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.arc(c.x,c.y,8,0,2*Math.PI); ctx.stroke();
+        ctx.fillStyle='rgba(245,158,11,0.3)'; ctx.fill();
         ctx.beginPath();
-        ctx.moveTo(c.x-14,c.y); ctx.lineTo(c.x+14,c.y);
-        ctx.moveTo(c.x,c.y-14); ctx.lineTo(c.x,c.y+14);
+        ctx.moveTo(c.x-16,c.y); ctx.lineTo(c.x+16,c.y);
+        ctx.moveTo(c.x,c.y-16); ctx.lineTo(c.x,c.y+16);
         ctx.stroke();
     }
     if(state.isEraserMode){
@@ -1623,7 +1632,7 @@ els.drawCanvas.addEventListener('click',e=>{
         for(let t=newTools.length-1;t>=0&&!hit;t--){let meas=[...newTools[t].measurements];for(let m=meas.length-1;m>=0;m--){let pts=meas[m],isHit=false;if(newTools[t].type==='POINT'){if(pts.length&&dist(pt,pts[0])<=16)isHit=true;}else{for(let i=0;i<pts.length-1;i++)if(distToSeg(pt,pts[i],pts[i+1])<=16)isHit=true;if(newTools[t].type==='AREA'&&pts.length>=3&&distToSeg(pt,pts[pts.length-1],pts[0])<=16)isHit=true;}if(isHit){meas.splice(m,1);newTools[t]={...newTools[t],measurements:meas};hit=true;break;}}}
         if(hit)setState({tools:newTools}); return;
     }
-    if(state.appState==='MEASURE'){
+    if(state.pixelsPerMeter && state.activeToolId){
         const activeTool=state.tools.find(t=>t.id===state.activeToolId);
         if(!activeTool||!['VRD','TRANCHEE','AREA','POINT'].includes(activeTool.type)) return;
         if(activeTool.type==='POINT'){setState({tools:state.tools.map(t=>t.id===state.activeToolId?{...t,measurements:[...t.measurements,[pt]]}:t)});return;}

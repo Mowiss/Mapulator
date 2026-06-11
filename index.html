@@ -1229,6 +1229,91 @@ function drawCanvas(){
     }
 }
 
+// ─── Dessin d'une icône VRD sur un contexte canvas ───
+function drawVrdIcon(ctx, ik, px, py, s){
+    if(ik==='regard_visite'){
+        ctx.beginPath();ctx.arc(px,py-s*0.1,s*0.85,0,2*Math.PI);ctx.stroke();
+        ctx.beginPath();ctx.arc(px,py-s*0.1,s*0.65,0,2*Math.PI);ctx.stroke();
+        ctx.strokeRect(px-s*0.45,py+s*0.75,s*0.9,s*0.45);
+    } else if(ik==='grille_plate'){
+        const hw=s*1.1; ctx.strokeRect(px-hw,py-hw,hw*2,hw*2);
+        ctx.beginPath();
+        for(let i=1;i<=5;i++){const lx=px-hw+(hw*2/6)*i;ctx.moveTo(lx,py-hw);ctx.lineTo(lx,py+hw);}
+        ctx.stroke();
+    } else if(ik==='grille_fendue'){
+        const hw=s*1.1; ctx.strokeRect(px-hw,py-hw,hw*2,hw*2);
+        ctx.beginPath();
+        for(let i=1;i<=5;i++){const lx=px-hw+(hw*2/6)*i;ctx.moveTo(lx,py-hw);ctx.lineTo(lx,py+hw);}
+        ctx.moveTo(px-hw,py);ctx.lineTo(px+hw,py); ctx.stroke();
+    } else if(ik==='vanne'){
+        const h=s*1.6;
+        ctx.beginPath();
+        ctx.moveTo(px-s*0.8,py-h/2);ctx.lineTo(px-s*0.8,py+h/2);
+        ctx.moveTo(px+s*0.8,py-h/2);ctx.lineTo(px+s*0.8,py+h/2);
+        ctx.moveTo(px+s*0.8,py-h/2);ctx.lineTo(px-s*0.8,py+h/2);
+        ctx.moveTo(px-s*0.8,py-h/2);ctx.lineTo(px+s*0.8,py+h/2);
+        ctx.stroke();
+    } else if(ik==='lampadaire'){
+        ctx.beginPath();ctx.arc(px,py-s*1.1,s*0.7,0,2*Math.PI);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(px,py-s*0.4);ctx.lineTo(px,py+s*1.5);ctx.stroke();
+    } else if(ik==='candelabre_double'){
+        ctx.beginPath();ctx.arc(px-s*0.8,py-s*1.1,s*0.6,0,2*Math.PI);ctx.stroke();
+        ctx.beginPath();ctx.arc(px+s*0.8,py-s*1.1,s*0.6,0,2*Math.PI);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(px,py-s*0.5);ctx.lineTo(px,py+s*1.5);ctx.stroke();
+    } else if(ik==='borne_lumineuse'){
+        const rw=s*0.5,rh=s*2.0; ctx.strokeRect(px-rw,py-rh/2,rw*2,rh);
+        const yt=py-rh/2+rh*0.15, yb=py-rh/2+rh*0.45;
+        ctx.beginPath();ctx.moveTo(px-rw,yt);ctx.lineTo(px+rw,yt);ctx.moveTo(px-rw,yb);ctx.lineTo(px+rw,yb);ctx.stroke();
+        ctx.beginPath();ctx.arc(px,(yt+yb)/2,(yb-yt)*0.38,0,2*Math.PI);ctx.stroke();
+    } else if(ik==='chambre_telecom'){
+        const rw=s*1.3,rh=s*2.5; ctx.strokeRect(px-rw/2,py-rh/2,rw,rh);
+        ctx.beginPath();ctx.moveTo(px-rw/2,py);ctx.lineTo(px+rw/2,py);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(px-rw/2,py-rh/2);ctx.lineTo(px+rw/2,py);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(px-rw/2,py);ctx.lineTo(px+rw/2,py+rh/2);ctx.stroke();
+    } else if(ik==='panneau_signa'){
+        ctx.strokeRect(px-s*0.7,py-s*1.8,s*1.4,s*1.4);
+        ctx.beginPath();ctx.moveTo(px,py-s*0.4);ctx.lineTo(px,py+s*1.5);ctx.stroke();
+    } else if(ik==='borne_irve'){
+        ctx.strokeRect(px-s*0.8,py-s*1.6,s*1.6,s*3.0);
+        ctx.beginPath();ctx.moveTo(px+s*0.3,py-s*1.2);ctx.lineTo(px-s*0.2,py-s*0.1);ctx.lineTo(px+s*0.2,py-s*0.1);ctx.lineTo(px-s*0.3,py+s*1.0);ctx.stroke();
+    }
+}
+
+// ─── Génère un dataUrl 32x32 représentant l'icône d'un outil pour le PDF ───
+function makeToolIconDataUrl(tool){
+    const SZ=32, c=document.createElement('canvas'); c.width=c.height=SZ;
+    const ctx=c.getContext('2d'); ctx.clearRect(0,0,SZ,SZ);
+    const col=tool.color||'#3b82f6';
+    ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineCap='round'; ctx.lineJoin='round';
+    const cx=SZ/2, cy=SZ/2;
+    if(tool.type==='VRD'){
+        ctx.lineWidth=3;
+        ctx.beginPath();ctx.moveTo(2,cy+3);ctx.lineTo(8,cy-3);ctx.lineTo(14,cy+3);ctx.lineTo(20,cy-3);ctx.lineTo(26,cy+2);ctx.lineTo(30,cy);ctx.stroke();
+    } else if(tool.type==='TRANCHEE'){
+        ctx.globalAlpha=0.55; ctx.fillRect(1,cy-7,SZ-2,14); ctx.globalAlpha=1;
+        ctx.lineWidth=2; ctx.strokeRect(1,cy-7,SZ-2,14);
+    } else if(tool.type==='AREA'){
+        ctx.globalAlpha=0.25;
+        ctx.beginPath();ctx.moveTo(cx,2);ctx.lineTo(SZ-2,SZ-2);ctx.lineTo(2,SZ-2);ctx.closePath();ctx.fill();
+        ctx.globalAlpha=1; ctx.lineWidth=2; ctx.stroke();
+    } else if(tool.type==='TERRASSEMENT'){
+        const isR=tool.terrType==='remblais';
+        ctx.lineWidth=2;
+        ctx.beginPath();
+        if(isR){ctx.moveTo(cx,4);ctx.lineTo(SZ-4,SZ-4);ctx.lineTo(4,SZ-4);ctx.closePath();}
+        else{ctx.moveTo(cx,SZ-4);ctx.lineTo(SZ-4,4);ctx.lineTo(4,4);ctx.closePath();}
+        ctx.globalAlpha=0.25; ctx.fill(); ctx.globalAlpha=1; ctx.stroke();
+    } else if(tool.type==='POINT'){
+        // Cercle coloré + icône blanche
+        ctx.lineWidth=2;
+        ctx.globalAlpha=0.8; ctx.beginPath();ctx.arc(cx,cy,14,0,2*Math.PI);ctx.fill(); ctx.globalAlpha=1;
+        ctx.beginPath();ctx.arc(cx,cy,14,0,2*Math.PI);ctx.stroke();
+        ctx.strokeStyle='#fff'; ctx.lineWidth=1.5;
+        drawVrdIcon(ctx, tool.vrdIcon||'regard_visite', cx, cy, 6);
+    }
+    return c.toDataURL('image/png');
+}
+
 function drawShape(points,tool,isPreview){
     if(!points.length) return;
     const color=tool.color||'#3b82f6';
@@ -1241,89 +1326,9 @@ function drawShape(points,tool,isPreview){
         const r=tool.pointSize||12;
         ctx.fillStyle=color+'cc'; ctx.strokeStyle=color; ctx.lineWidth=1.5;
         ctx.beginPath(); ctx.arc(p.x,p.y,r,0,2*Math.PI); ctx.fill(); ctx.stroke();
-        // Symbole interne mis à l'échelle
         const s=r*0.45;
         ctx.strokeStyle='#fff'; ctx.lineWidth=Math.max(1,r*0.1);
-        const ik=tool.vrdIcon||'regard';
-        if(ik==='regard_visite'){
-            ctx.beginPath();ctx.arc(p.x,p.y-s*0.1,s*0.85,0,2*Math.PI);ctx.stroke();
-            ctx.beginPath();ctx.arc(p.x,p.y-s*0.1,s*0.65,0,2*Math.PI);ctx.stroke();
-            ctx.strokeRect(p.x-s*0.45,p.y+s*0.75,s*0.9,s*0.45);
-        }
-        else if(ik==='grille_plate'){
-            const hw=s*1.1;
-            ctx.strokeRect(p.x-hw, p.y-hw, hw*2, hw*2);
-            ctx.beginPath();
-            for(let i=1; i<=5; i++){
-                const lx = p.x - hw + (hw*2/6)*i;
-                ctx.moveTo(lx, p.y-hw); ctx.lineTo(lx, p.y+hw);
-            }
-            ctx.stroke();
-        }
-        else if(ik==='grille_fendue'){
-            const hw=s*1.1;
-            ctx.strokeRect(p.x-hw, p.y-hw, hw*2, hw*2);
-            ctx.beginPath();
-            for(let i=1; i<=5; i++){
-                const lx = p.x - hw + (hw*2/6)*i;
-                ctx.moveTo(lx, p.y-hw); ctx.lineTo(lx, p.y+hw);
-            }
-            ctx.moveTo(p.x-hw, p.y); ctx.lineTo(p.x+hw, p.y);
-            ctx.stroke();
-        }
-        else if(ik==='vanne'){
-            const h=s*1.6;
-            ctx.beginPath();
-            ctx.moveTo(p.x-s*0.8, p.y-h/2); ctx.lineTo(p.x-s*0.8, p.y+h/2);
-            ctx.moveTo(p.x+s*0.8, p.y-h/2); ctx.lineTo(p.x+s*0.8, p.y+h/2);
-            ctx.moveTo(p.x+s*0.8, p.y-h/2); ctx.lineTo(p.x-s*0.8, p.y+h/2);
-            ctx.moveTo(p.x-s*0.8, p.y-h/2); ctx.lineTo(p.x+s*0.8, p.y+h/2);
-            ctx.stroke();
-        }
-        else if(ik==='lampadaire'){
-            ctx.beginPath();ctx.arc(p.x,p.y-s*1.1,s*0.7,0,2*Math.PI);ctx.stroke();
-            ctx.beginPath();ctx.moveTo(p.x,p.y-s*0.4);ctx.lineTo(p.x,p.y+s*1.5);ctx.stroke();
-        }
-        else if(ik==='candelabre_double'){
-            ctx.beginPath();ctx.arc(p.x-s*0.8,p.y-s*1.1,s*0.6,0,2*Math.PI);ctx.stroke();
-            ctx.beginPath();ctx.arc(p.x+s*0.8,p.y-s*1.1,s*0.6,0,2*Math.PI);ctx.stroke();
-            ctx.beginPath();ctx.moveTo(p.x,p.y-s*0.5);ctx.lineTo(p.x,p.y+s*1.5);ctx.stroke();
-        }
-        else if(ik==='borne_lumineuse'){
-            const rw=s*0.5, rh=s*2.0;
-            ctx.strokeRect(p.x-rw, p.y-rh/2, rw*2, rh);
-            const yt = p.y-rh/2 + rh*0.15;
-            const yb = p.y-rh/2 + rh*0.45;
-            ctx.beginPath();
-            ctx.moveTo(p.x-rw, yt); ctx.lineTo(p.x+rw, yt);
-            ctx.moveTo(p.x-rw, yb); ctx.lineTo(p.x+rw, yb);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.arc(p.x, (yt+yb)/2, (yb-yt)*0.38, 0, 2*Math.PI);
-            ctx.stroke();
-        }
-        else if(ik==='chambre_telecom'){
-            const rw=s*1.3, rh=s*2.5;
-            ctx.strokeRect(p.x-rw/2, p.y-rh/2, rw, rh);
-            ctx.beginPath();ctx.moveTo(p.x-rw/2,p.y);ctx.lineTo(p.x+rw/2,p.y);ctx.stroke();
-            ctx.beginPath();ctx.moveTo(p.x-rw/2,p.y-rh/2);ctx.lineTo(p.x+rw/2,p.y);ctx.stroke();
-            ctx.beginPath();ctx.moveTo(p.x-rw/2,p.y);ctx.lineTo(p.x+rw/2,p.y+rh/2);ctx.stroke();
-        }
-        else if(ik==='panneau_signa'){
-            ctx.strokeRect(p.x-s*0.7, p.y-s*1.8, s*1.4, s*1.4);
-            ctx.beginPath();ctx.moveTo(p.x,p.y-s*0.4);ctx.lineTo(p.x,p.y+s*1.5);ctx.stroke();
-        }
-        else if(ik==='borne_irve'){
-            // Boîtier rectangle
-            ctx.strokeRect(p.x-s*0.8, p.y-s*1.6, s*1.6, s*3.0);
-            // Éclair (lightning bolt)
-            ctx.beginPath();
-            ctx.moveTo(p.x+s*0.3, p.y-s*1.2);
-            ctx.lineTo(p.x-s*0.2, p.y-s*0.1);
-            ctx.lineTo(p.x+s*0.2, p.y-s*0.1);
-            ctx.lineTo(p.x-s*0.3, p.y+s*1.0);
-            ctx.stroke();
-        }
+        drawVrdIcon(ctx, tool.vrdIcon||'regard_visite', p.x, p.y, s);
         ctx.restore(); return;
     }
 
@@ -1725,10 +1730,11 @@ async function generatePrintByFolders(){
                 const unit=TYPE_UNIT[t.type]||'';
                 const maj = t.type==='POINT' ? null : net*1.1;
                 if(i%2===0){doc.setFillColor(250,250,250);doc.rect(pad,y-4,W-pad*2,RH,'F');}
-                const rgb=hexToRgb(t.color);
-                doc.setFillColor(rgb.r,rgb.g,rgb.b); doc.circle(pad+3,y-1,1.5,'F');
+                // Icône outil
+                const iconDataUrl = makeToolIconDataUrl(t);
+                doc.addImage(iconDataUrl, 'PNG', pad, y-4.5, 6, 6);
                 doc.setTextColor(30,30,30); doc.setFont('helvetica','normal'); doc.setFontSize(8);
-                doc.text(t.name, pad+7, y);
+                doc.text(t.name, pad+8, y);
                 doc.setTextColor(130,130,130); doc.setFontSize(7);
                 doc.text(tLabel, colType, y, {align:'right'});
                 const netDisplay = t.type==='TERRASSEMENT'
@@ -1838,14 +1844,13 @@ async function generatePrintImageForTools(tools, title){
             // Fond zébré
             if(i%2===0){ doc.setFillColor(250,250,250); doc.rect(pad,y-4,W-pad*2,RH,'F'); }
 
-            // Pastille couleur
-            const rgb=hexToRgb(t.color);
-            doc.setFillColor(rgb.r,rgb.g,rgb.b);
-            doc.circle(pad+3, y-1, 1.5, 'F');
+            // Icône outil
+            const iconDataUrl = makeToolIconDataUrl(t);
+            doc.addImage(iconDataUrl, 'PNG', pad, y-4.5, 6, 6);
 
             // Textes
             doc.setTextColor(30,30,30); doc.setFont('helvetica','normal'); doc.setFontSize(8);
-            doc.text(t.name, pad+7, y);
+            doc.text(t.name, pad+8, y);
             doc.setTextColor(130,130,130); doc.setFontSize(7);
             doc.text(TYPE_LABEL[t.type]||'', colType, y, {align:'right'});
             doc.setTextColor(50,50,50); doc.setFontSize(8);

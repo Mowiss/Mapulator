@@ -265,6 +265,19 @@
             <circle cx="3" cy="19" r="2" fill="#4ade80" stroke="none"/><circle cx="12" cy="3" r="2" fill="#4ade80" stroke="none"/><circle cx="21" cy="19" r="2" fill="#4ade80" stroke="none"/>
         </svg>
     </button>
+    <button id="tb-TERRASSEMENT" onclick="toggleTab('TERRASSEMENT')" class="tb-tool-btn" title="Terrassement — Volumes de surface">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Face du dessus -->
+            <polygon points="12,3 21,7.5 12,12 3,7.5" fill="#a78bfa" opacity="0.25"/>
+            <polygon points="12,3 21,7.5 12,12 3,7.5"/>
+            <!-- Face gauche -->
+            <polygon points="3,7.5 12,12 12,21 3,16.5" fill="#a78bfa" opacity="0.12"/>
+            <polygon points="3,7.5 12,12 12,21 3,16.5"/>
+            <!-- Face droite -->
+            <polygon points="21,7.5 12,12 12,21 21,16.5" fill="#a78bfa" opacity="0.18"/>
+            <polygon points="21,7.5 12,12 12,21 21,16.5"/>
+        </svg>
+    </button>
     <button id="tb-POINT" onclick="toggleTab('POINT')" class="tb-tool-btn" title="Pointage VRD">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f472b6" stroke-width="2" stroke-linecap="round">
             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#f472b6" opacity="0.2"/>
@@ -322,11 +335,16 @@
 
 <script>
 const VRD_ICONS = {
-    regard:     { label:'Regard',          svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="7" y="7" width="10" height="10" rx="1" fill="currentColor" opacity="0.15"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="12" y1="7" x2="12" y2="17"/></svg>` },
-    vanne:      { label:'Vanne',           svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polygon points="5,7 19,7 15,12 19,17 5,17 9,12" fill="currentColor" opacity="0.15"/><polygon points="5,7 19,7 15,12 19,17 5,17 9,12"/><line x1="12" y1="4" x2="12" y2="7"/><line x1="9" y1="4" x2="15" y2="4"/></svg>` },
-    bouche:     { label:'Bouche incendie', svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="8" y="10" width="8" height="10" rx="1" fill="currentColor" opacity="0.15"/><rect x="8" y="10" width="8" height="10" rx="1"/><path d="M6 13h2M16 13h2"/><rect x="10" y="6" width="4" height="4" rx="1"/><line x1="12" y1="4" x2="12" y2="6"/></svg>` },
-    poteau:     { label:'Poteau',          svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="20" x2="12" y2="6"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="9" y1="9" x2="15" y2="9"/><circle cx="12" cy="5" r="1.5" fill="currentColor"/></svg>` },
-    lampadaire: { label:'Lampadaire',      svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="20" x2="12" y2="9"/><path d="M12 9 Q12 4 17 4"/><circle cx="17" cy="4" r="2" fill="currentColor" opacity="0.4"/><line x1="10" y1="20" x2="14" y2="20"/></svg>` }
+    regard:     { label:'Regard',           svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="7" y="7" width="10" height="10" rx="1" fill="currentColor" opacity="0.15"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="12" y1="7" x2="12" y2="17"/></svg>` },
+    vanne:      { label:'Vanne',            svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polygon points="5,7 19,7 15,12 19,17 5,17 9,12" fill="currentColor" opacity="0.15"/><polygon points="5,7 19,7 15,12 19,17 5,17 9,12"/><line x1="12" y1="4" x2="12" y2="7"/><line x1="9" y1="4" x2="15" y2="4"/></svg>` },
+    bouche:     { label:'Bouche incendie',  svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="8" y="10" width="8" height="10" rx="1" fill="currentColor" opacity="0.15"/><rect x="8" y="10" width="8" height="10" rx="1"/><path d="M6 13h2M16 13h2"/><rect x="10" y="6" width="4" height="4" rx="1"/><line x1="12" y1="4" x2="12" y2="6"/></svg>` },
+    poteau:     { label:'Poteau',           svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="20" x2="12" y2="6"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="9" y1="9" x2="15" y2="9"/><circle cx="12" cy="5" r="1.5" fill="currentColor"/></svg>` },
+    lampadaire: { label:'Lampadaire',       svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="20" x2="12" y2="9"/><path d="M12 9 Q12 4 17 4"/><circle cx="17" cy="4" r="2" fill="currentColor" opacity="0.4"/><line x1="10" y1="20" x2="14" y2="20"/></svg>` },
+    compteur:   { label:'Compteur',         svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="11" r="7"/><line x1="12" y1="11" x2="15.5" y2="7.5"/><circle cx="12" cy="11" r="1.5" fill="currentColor"/><line x1="7" y1="19" x2="17" y2="19"/><line x1="8" y1="17" x2="7" y2="19"/><line x1="16" y1="17" x2="17" y2="19"/></svg>` },
+    chambre:    { label:'Chambre de tirage',svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="8" width="18" height="11" rx="1" fill="currentColor" opacity="0.12"/><rect x="3" y="8" width="18" height="11" rx="1"/><line x1="7" y1="8" x2="7" y2="5"/><line x1="12" y1="8" x2="12" y2="5"/><line x1="17" y1="8" x2="17" y2="5"/><line x1="5" y1="5" x2="19" y2="5"/></svg>` },
+    avaloir:    { label:'Grille avaloir',   svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><ellipse cx="12" cy="13" rx="8" ry="5"/><line x1="8" y1="9.5" x2="8" y2="16.5"/><line x1="12" y1="8" x2="12" y2="18"/><line x1="16" y1="9.5" x2="16" y2="16.5"/><line x1="4" y1="13" x2="20" y2="13"/></svg>` },
+    borne:      { label:'Borne',            svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="4" width="6" height="14" rx="3" fill="currentColor" opacity="0.15"/><rect x="9" y="4" width="6" height="14" rx="3"/><line x1="7" y1="20" x2="17" y2="20"/></svg>` },
+    coffret:    { label:'Coffret électrique',svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="3" width="16" height="18" rx="1" fill="currentColor" opacity="0.12"/><rect x="4" y="3" width="16" height="18" rx="1"/><line x1="12" y1="3" x2="12" y2="21"/><circle cx="8.5" cy="12" r="2"/><line x1="15" y1="9" x2="15" y2="15"/><line x1="13.5" y1="10.5" x2="16.5" y2="10.5"/></svg>` },
 };
 
 const COLORS = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#a855f7'];
@@ -340,9 +358,11 @@ let state = {
     imageSize: {w:0, h:0},
     scaleRatioInput: '50',
     superpositionMode: false,
-    superpositionClick1: null,  // {planIdx, x, y} — premier clic
+    superpositionClick1: null,
+    superpositionTargetIdx: null,  // index du plan à déplacer
     isLoading: false, pixelsPerMeter: null,
     tools: [], activeToolId: null,
+    pendingDeleteTool: null,
     folders: [],
     folderOpen: {},
     isCreatingFolder: false,
@@ -379,39 +399,44 @@ function renderDOM() {
         els.canvasContainer.style.display = 'block';
         els.canvasContainer.style.transform = `translate(${state.transform.x}px,${state.transform.y}px) scale(${state.transform.scale})`;
         els.canvasContainer.querySelectorAll('img.plan-layer').forEach(el=>el.remove());
-        // Calculer les dimensions effectives de chaque plan
+
         const ref = state.plans[0];
-        let maxW = 0, maxH = 0;
+        // Calculer le bounding box union de tous les plans
+        let minX=0, minY=0, maxX=0, maxY=0;
         state.plans.forEach((plan, i) => {
-            const sc = (i === 0) ? 1 : computePlanScale(plan, ref);
-            const ox = plan.offsetX || 0;
-            const oy = plan.offsetY || 0;
-            maxW = Math.max(maxW, plan.w * sc + Math.abs(ox));
-            maxH = Math.max(maxH, plan.h * sc + Math.abs(oy));
+            const sc = (i===0) ? 1 : computePlanScale(plan, ref);
+            const bb = planBBox(plan, sc);
+            minX = Math.min(minX, bb.x);
+            minY = Math.min(minY, bb.y);
+            maxX = Math.max(maxX, bb.x + bb.w);
+            maxY = Math.max(maxY, bb.y + bb.h);
         });
-        // Le container prend la taille maximale
-        const cW = Math.max(state.imageSize.w, maxW);
-        const cH = Math.max(state.imageSize.h, maxH);
+        // Si des offsets négatifs existent, décaler tous les plans
+        const shiftX = Math.min(0, minX);
+        const shiftY = Math.min(0, minY);
+        const cW = Math.max(maxX - shiftX, state.imageSize.w);
+        const cH = Math.max(maxY - shiftY, state.imageSize.h);
         els.canvasContainer.style.width  = cW + 'px';
         els.canvasContainer.style.height = cH + 'px';
         els.drawCanvas.width  = cW;
         els.drawCanvas.height = cH;
-        // Construire les couches
+
+        // Construire les couches avec transform correct
         state.plans.forEach((plan, i) => {
-            const sc = (i === 0) ? 1 : computePlanScale(plan, ref);
-            const ox = plan.offsetX || 0;
-            const oy = plan.offsetY || 0;
+            const sc = (i===0) ? 1 : computePlanScale(plan, ref);
             const img = document.createElement('img');
             img.className = 'plan-layer';
             img.src = plan.src;
-            img.style.cssText = `position:absolute;top:0;left:0;width:${plan.w}px;height:${plan.h}px;pointer-events:none;display:block;opacity:${plan.opacity??1};z-index:${i+1};transform-origin:top left;transform:translate(${ox}px,${oy}px) scale(${sc});`;
+            // Appliquer le shift pour les offsets négatifs
+            const adjustedPlan = { ...plan, offsetX: (plan.offsetX||0) - shiftX, offsetY: (plan.offsetY||0) - shiftY };
+            img.style.cssText = `position:absolute;top:0;left:0;width:${plan.w}px;height:${plan.h}px;pointer-events:none;display:block;opacity:${plan.opacity??1};z-index:${i+1};transform-origin:top left;transform:${planCssTransform(adjustedPlan, sc)};`;
             els.canvasContainer.insertBefore(img, els.drawCanvas);
         });
         els.drawCanvas.style.zIndex = state.plans.length + 1;
         // Curseur
         const isSuperMode = state.superpositionMode;
         const at = state.tools.find(t=>t.id===state.activeToolId);
-        const drawMode = state.pixelsPerMeter && at && ['VRD','TRANCHEE','AREA','POINT'].includes(at.type);
+        const drawMode = state.pixelsPerMeter && at && ['VRD','TRANCHEE','AREA','TERRASSEMENT','POINT'].includes(at.type);
         els.drawCanvas.style.cursor = state.isPanning ? 'grabbing' : (isSuperMode ? 'cell' : (state.isEraserMode||drawMode ? 'crosshair' : 'grab'));
     } else {
         els.canvasContainer.style.display = 'none';
@@ -431,7 +456,7 @@ function renderCreatorBar() {
     const d = state.creatorData;
     const tab = d.effectiveType || state.activeTab;
     const isEdit = state.creatorMode === 'edit';
-    const typeLabel = {VRD:'VRD',TRANCHEE:'Tranchée',AREA:'Surface',POINT:'Pointage'}[tab]||'';
+    const typeLabel = {VRD:'VRD',TRANCHEE:'Tranchée',AREA:'Surface',TERRASSEMENT:'Terrassement',POINT:'Pointage'}[tab]||'';
     const S = 'width:1px;height:22px;background:var(--border);margin:0 3px;flex-shrink:0;';
 
     const colorDots = COLORS.map(c=>`<div class="cr-color ${d.color===c?'sel':''}" style="background:${c}" onclick="selectCreatorColor('${c}')"></div>`).join('');
@@ -473,6 +498,25 @@ function renderCreatorBar() {
             <span style="font-size:0.6rem;color:var(--muted);">m</span>
         </div>` : '';
 
+    const terrHtml = tab==='TERRASSEMENT' ? `
+        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
+            <span style="font-size:0.6rem;color:var(--muted);white-space:nowrap;">Z</span>
+            <input type="number" step="0.01" value="${d.terrZ||'1.00'}" style="width:52px;" class="cr-input" oninput="state.creatorData.terrZ=this.value" onkeydown="handleCreatorKey(event)"/>
+            <span style="font-size:0.6rem;color:var(--muted);">m</span>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
+            <button onclick="state.creatorData.terrType='deblais';renderCreatorBar()"
+                    style="background:${(d.terrType||'deblais')==='deblais'?'#1e3a5f':'#18181b'};border:1px solid ${(d.terrType||'deblais')==='deblais'?'#3b82f6':'var(--border2)'};border-radius:6px;padding:3px 8px;cursor:pointer;color:${(d.terrType||'deblais')==='deblais'?'#93c5fd':'var(--muted)'};font-size:0.65rem;font-weight:700;font-family:inherit;display:flex;align-items:center;gap:4px;">
+                <svg width="12" height="10" viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 2 L8 10 L12 6 L16 10 L22 2"/></svg>
+                Déblais
+            </button>
+            <button onclick="state.creatorData.terrType='remblais';renderCreatorBar()"
+                    style="background:${d.terrType==='remblais'?'#3b1f0a':'#18181b'};border:1px solid ${d.terrType==='remblais'?'#f97316':'var(--border2)'};border-radius:6px;padding:3px 8px;cursor:pointer;color:${d.terrType==='remblais'?'#fdba74':'var(--muted)'};font-size:0.65rem;font-weight:700;font-family:inherit;display:flex;align-items:center;gap:4px;">
+                <svg width="12" height="10" viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 10 L8 2 L12 6 L16 2 L22 10"/></svg>
+                Remblais
+            </button>
+        </div>` : '';
+
     els.creatorBar.innerHTML = `
         <span style="font-size:0.62rem;font-weight:700;color:var(--muted);letter-spacing:0.07em;text-transform:uppercase;flex-shrink:0;">${isEdit?'✍️':'+'} ${typeLabel}</span>
         <div style="${S}"></div>
@@ -486,6 +530,7 @@ function renderCreatorBar() {
         ${sizeHtml    ? `<div style="${S}"></div>${sizeHtml}`    : ''}
         ${iconsHtml   ? `<div style="${S}"></div>${iconsHtml}`   : ''}
         ${trancheeHtml? `<div style="${S}"></div>${trancheeHtml}`: ''}
+        ${terrHtml    ? `<div style="${S}"></div>${terrHtml}`    : ''}
         <div style="${S}"></div>
         <button class="cr-btn cr-save" onclick="saveTool()">${isEdit?'Mettre à jour':'Créer'}</button>
         <button class="cr-btn cr-cancel" onclick="cancelCreator()">Annuler</button>
@@ -504,8 +549,8 @@ function selectVrdIcon(key) {
 }
 function handleCreatorKey(e) { e.stopPropagation(); if(e.key==='Enter') saveTool(); if(e.key==='Escape') cancelCreator(); }
 function openCreator(mode, toolId=null, forceType=null) {
-    let d={ name:'', color:COLORS[4], thickness:20, pointSize:12, indice:'', editingId:null, vrdIcon:'regard', trancheeW:'0.80', trancheeD:'1.20' };
-    if(mode==='edit'&&toolId){ const t=state.tools.find(x=>x.id===toolId); if(t) d={name:t.name,color:t.color,thickness:t.thickness||20,pointSize:t.pointSize||12,indice:t.indice||'',editingId:t.id,vrdIcon:t.vrdIcon||'regard',trancheeW:String(t.trancheeW||'0.80'),trancheeD:String(t.trancheeD||'1.20')}; }
+    let d={ name:'', color:COLORS[4], thickness:20, pointSize:12, indice:'', editingId:null, vrdIcon:'regard', trancheeW:'0.80', trancheeD:'1.20', terrZ:'1.00', terrType:'deblais' };
+    if(mode==='edit'&&toolId){ const t=state.tools.find(x=>x.id===toolId); if(t) d={name:t.name,color:t.color,thickness:t.thickness||20,pointSize:t.pointSize||12,indice:t.indice||'',editingId:t.id,vrdIcon:t.vrdIcon||'regard',trancheeW:String(t.trancheeW||'0.80'),trancheeD:String(t.trancheeD||'1.20'),terrZ:String(t.terrZ||'1.00'),terrType:t.terrType||'deblais'}; }
     // type effectif : forcé > outil édité > onglet actif
     const effectiveType = forceType || (d.editingId ? state.tools.find(t=>t.id===d.editingId)?.type : null) || state.activeTab;
     d.effectiveType = effectiveType;
@@ -526,6 +571,8 @@ function saveTool() {
         color:d.color, thickness:+d.thickness, pointSize:+(d.pointSize||12), vrdIcon:d.vrdIcon,
         indice,
         trancheeW:parseFloat(d.trancheeW)||0.8, trancheeD:parseFloat(d.trancheeD)||1.2,
+        terrZ:parseFloat(d.terrZ)||1.0,
+        terrType:d.terrType||'deblais',
         hidden: existing ? existing.hidden : false,
         measurements:existing?existing.measurements:[] };
     const newTools=[...state.tools]; const idx=newTools.findIndex(t=>t.id===newTool.id);
@@ -551,7 +598,7 @@ function renderToolbarStates() {
     });
 
     // Boutons outils — classe tb-tool-btn, actif = outil actif de dessin
-    ['VRD','TRANCHEE','AREA','POINT'].forEach(t=>{
+    ['VRD','TRANCHEE','AREA','TERRASSEMENT','POINT'].forEach(t=>{
         const btn=document.getElementById('tb-'+t); if(!btn) return;
         const isActive = activeToolType===t;
         btn.className = isActive ? 'tb-tool-btn active' : 'tb-tool-btn';
@@ -596,7 +643,7 @@ function buildItemTab() {
         if (!groups[key]) groups[key] = [];
         groups[key].push(t);
     });
-    const TYPE_ORDER_ACCORD = {VRD:0, AREA:1, TRANCHEE:2, POINT:3};
+    const TYPE_ORDER_ACCORD = {VRD:0, AREA:1, TRANCHEE:2, TERRASSEMENT:3, POINT:4};
     Object.keys(groups).forEach(k=>{
         groups[k]=groups[k].slice().sort((a,b)=>(TYPE_ORDER_ACCORD[a.type]??9)-(TYPE_ORDER_ACCORD[b.type]??9));
     });
@@ -900,13 +947,13 @@ function toggleIndiceVisibility(key) {
 
 function buildToolCard(tool) {
     const isActive = state.activeToolId===tool.id;
-    const isTr=tool.type==='TRANCHEE', isPt=tool.type==='POINT', isAr=tool.type==='AREA';
+    const isTr=tool.type==='TRANCHEE', isPt=tool.type==='POINT', isAr=tool.type==='AREA', isTerr=tool.type==='TERRASSEMENT';
     const isHidden=!!tool.hidden;
-    const len=tool.measurements.reduce((a,p)=>a+calculateLength(p,isAr||isTr),0);
-    const area=isAr?tool.measurements.reduce((a,p)=>a+calculateArea(p),0):0;
-    const vol=isTr?len*tool.trancheeW*tool.trancheeD:0;
+    const len=tool.measurements.reduce((a,p)=>a+calculateLength(p,isAr||isTr||isTerr),0);
+    const area=(isAr||isTerr)?tool.measurements.reduce((a,p)=>a+calculateArea(p),0):0;
+    const vol=isTr?len*(tool.trancheeW||0.8)*(tool.trancheeD||1.2) : isTerr?area*(tool.terrZ||1):0;
     const sz=tool.pointSize||12;
-    const typeLabel={VRD:'VRD',TRANCHEE:'Tranchée',AREA:'Surface',POINT:'Pointage'}[tool.type]||'';
+    const typeLabel={VRD:'VRD',TRANCHEE:'Tranchée',AREA:'Surface',TERRASSEMENT:'Terrassement',POINT:'Pointage'}[tool.type]||'';
     const preview=isPt
         ?`<div style="color:${isHidden?'var(--muted)':tool.color};opacity:${isHidden?0.35:1};">${VRD_ICONS[tool.vrdIcon||'regard'].svg}</div>`
         :`<div style="width:18px;height:${Math.max(isTr?(tool.thickness||20)/4:2,2)}px;border-radius:2px;background:${tool.color};opacity:${isHidden?0.2:isTr?0.5:1};flex-shrink:0;"></div>`;
@@ -926,6 +973,7 @@ function buildToolCard(tool) {
                 <div style="text-align:right;margin-right:4px;line-height:1.2;">
                     ${isTr?`<div style="font-family:monospace;font-size:0.68rem;font-weight:700;color:var(--amber);">${vol.toFixed(2)} m³</div>`:''}
                     ${isAr?`<div style="font-family:monospace;font-size:0.68rem;font-weight:700;color:var(--amber);">${area.toFixed(2)} m²</div>`:''}
+                    ${isTerr?`<div style="font-family:monospace;font-size:0.68rem;font-weight:700;color:var(--amber);">${tool.terrType==='remblais'?'+':'-'}${vol.toFixed(2)} m³</div><div style="font-size:0.58rem;font-weight:700;color:${tool.terrType==='remblais'?'#fdba74':'#93c5fd'};">${tool.terrType==='remblais'?'▲':'▼'} ${tool.terrType==='remblais'?'Remblais':'Déblais'}</div>`:''}
                     ${tool.type==='VRD'?`<div style="font-family:monospace;font-size:0.68rem;font-weight:700;color:var(--amber);">${len.toFixed(2)} ml</div>`:''}
                     ${isPt?`<div style="font-family:monospace;font-size:0.68rem;font-weight:700;color:var(--amber);">${tool.measurements.length} u</div>`:''}
                 </div>
@@ -934,56 +982,87 @@ function buildToolCard(tool) {
                 <button onclick="event.stopPropagation();deleteTool('${tool.id}')" style="background:#18181b;border:1px solid var(--border2);border-radius:5px;padding:2px 5px;cursor:pointer;color:var(--muted);transition:all 0.1s;" onmouseover="this.style.color='#ef4444';this.style.borderColor='#450a0a';this.style.background='#1f0808'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border2)';this.style.background='#18181b'"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
             </div>
         </div>
+        ${state.pendingDeleteTool===tool.id ? `
+        <div onclick="event.stopPropagation()" style="margin-top:8px;padding:8px 10px;background:#1f0808;border:1px solid #450a0a;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <span style="font-size:0.68rem;color:#fca5a5;">Supprimer cet outil ?</span>
+            <div style="display:flex;gap:5px;">
+                <button onclick="event.stopPropagation();confirmDeleteTool()" style="background:#dc2626;color:#fff;border:none;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:0.68rem;font-weight:700;font-family:inherit;">Oui</button>
+                <button onclick="event.stopPropagation();cancelDeleteTool()" style="background:#27272a;color:var(--muted);border:none;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:0.68rem;font-family:inherit;">Non</button>
+            </div>
+        </div>` : ''}
     </div>`;
 }
 
 function buildSetup(){
-    const plansHtml = state.plans.map((plan,i)=>`
-        <div style="background:#111;border:1px solid var(--border2);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;">
-                <input type="text" value="${plan.name||`Plan ${i+1}`}" placeholder="Nom du plan…"
-                       class="d-input" style="flex:1;margin-right:8px;height:28px;font-size:0.72rem;"
-                       onkeydown="event.stopPropagation()"
-                       onchange="setPlanName(${i},this.value)" />
-                <div style="display:flex;gap:4px;flex-shrink:0;">
-                    ${i>0?`<button onclick="movePlan(${i},-1)" style="background:#18181b;border:1px solid var(--border2);border-radius:5px;padding:2px 6px;cursor:pointer;color:var(--muted);font-size:0.7rem;" title="Remonter">↑</button>`:''}
-                    ${i<state.plans.length-1?`<button onclick="movePlan(${i},1)" style="background:#18181b;border:1px solid var(--border2);border-radius:5px;padding:2px 6px;cursor:pointer;color:var(--muted);font-size:0.7rem;" title="Descendre">↓</button>`:''}
-                    <button onclick="removePlan(${i})" style="background:#18181b;border:1px solid #450a0a;border-radius:5px;padding:2px 6px;cursor:pointer;color:#ef4444;font-size:0.7rem;" title="Supprimer">✕</button>
-                </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;">
-                <span style="font-size:0.62rem;color:var(--muted);white-space:nowrap;">Échelle 1 :</span>
-                <input type="number" value="${plan.scaleRatio||'50'}" min="1" style="width:66px;" class="d-input"
-                       onkeydown="event.stopPropagation()"
-                       onchange="setPlanScale(${i},this.value)" />
-                ${i===0?`<span style="font-size:0.6rem;color:var(--amber);">← mesures</span>`:''}
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;">
-                <span style="font-size:0.6rem;color:var(--muted);white-space:nowrap;">Opacité</span>
-                <input type="range" min="0.05" max="1" step="0.05" value="${plan.opacity??1}"
-                       style="-webkit-appearance:none;height:4px;border-radius:2px;background:var(--border2);outline:none;cursor:pointer;flex:1;"
-                       oninput="setPlanOpacity(${i},+this.value);document.getElementById('op${i}').textContent=Math.round(this.value*100)+'%'"/>
-                <span id="op${i}" style="font-size:0.63rem;color:var(--amber);width:30px;font-weight:700;">${Math.round((plan.opacity??1)*100)}%</span>
-            </div>
-        </div>`).join('');
+    const plansHtml = state.plans.map((plan,i)=>{
+        const isSuperTarget = state.superpositionMode && state.superpositionTargetIdx===i;
+        return `
+        <div style="background:#111;border:1px solid ${isSuperTarget?'var(--amber-dk)':'var(--border2)'};border-radius:10px;padding:11px 12px;display:flex;flex-direction:column;gap:8px;">
 
-    const superBtn = state.plans.length > 1 ? `
-    <div style="background:var(--surface);border:1px solid ${state.superpositionMode?'var(--amber-dk)':'var(--border)'};border-radius:13px;padding:13px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${state.superpositionMode?'10px':'0'};">
-            <div>
-                <div style="font-size:0.72rem;font-weight:700;color:var(--white);">Mode Superposition</div>
-                <div style="font-size:0.62rem;color:var(--muted);margin-top:2px;">Aligner deux plans par points</div>
+            <!-- L1 : Nom + X -->
+            <div style="display:flex;align-items:center;gap:6px;">
+                <input type="text" value="${plan.name||`Plan ${i+1}`}" placeholder="Nom du plan…"
+                       class="d-input" style="flex:1;min-width:0;height:28px;font-size:0.73rem;"
+                       onkeydown="event.stopPropagation()" onchange="setPlanName(${i},this.value)" />
+                <button onclick="removePlan(${i})" title="Supprimer"
+                        style="background:none;border:none;cursor:pointer;color:#ef4444;padding:3px;flex-shrink:0;"
+                        onmouseover="this.style.color='#fca5a5'" onmouseout="this.style.color='#ef4444'">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+                </button>
             </div>
-            <button onclick="toggleSuperpositionMode()" style="background:${state.superpositionMode?'var(--amber-dk)':'#18181b'};color:${state.superpositionMode?'#000':'var(--muted)'};border:1px solid ${state.superpositionMode?'var(--amber)':'var(--border2)'};border-radius:8px;padding:5px 12px;cursor:pointer;font-weight:700;font-size:0.72rem;font-family:inherit;">
-                ${state.superpositionMode?'Actif ✓':'Activer'}
-            </button>
-        </div>
-        ${state.superpositionMode?`
+
+            <!-- L2 : Échelle 1:[XX] [▲][▼] -->
+            <div style="display:flex;align-items:center;gap:6px;">
+                <span style="font-size:0.7rem;color:var(--muted);flex-shrink:0;">Échelle 1 :</span>
+                <input type="number" value="${plan.scaleRatio||'50'}" min="1"
+                       class="d-input" style="width:58px;flex-shrink:0;height:26px;font-size:0.73rem;"
+                       onkeydown="event.stopPropagation()" onchange="setPlanScale(${i},this.value)" />
+                <div style="flex:1;"></div>
+                <button onclick="${i>0?`movePlan(${i},-1)`:''}" title="Remonter"
+                        style="background:#18181b;border:1px solid var(--border2);border-radius:5px;padding:4px 8px;cursor:${i>0?'pointer':'default'};color:${i>0?'var(--muted)':'#333'};font-size:0.75rem;flex-shrink:0;"
+                        ${i>0?`onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--muted)'"`:''}>▲</button>
+                <button onclick="${i<state.plans.length-1?`movePlan(${i},1)`:''}" title="Descendre"
+                        style="background:#18181b;border:1px solid var(--border2);border-radius:5px;padding:4px 8px;cursor:${i<state.plans.length-1?'pointer':'default'};color:${i<state.plans.length-1?'var(--muted)':'#333'};font-size:0.75rem;flex-shrink:0;"
+                        ${i<state.plans.length-1?`onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--muted)'"`:''}>▼</button>
+            </div>
+
+            <!-- L3 : [Déplacer] [Rotation X°] -->
+            <div style="display:flex;gap:6px;">
+                ${i>0?`
+                <button onclick="setSuperTarget(${i})"
+                        style="flex:1;background:${isSuperTarget?'var(--amber-dk)':'#18181b'};border:1px solid ${isSuperTarget?'var(--amber)':'var(--border2)'};border-radius:7px;padding:7px;cursor:pointer;color:${isSuperTarget?'#000':'var(--muted)'};font-size:0.7rem;font-weight:700;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:5px;"
+                        onmouseover="this.style.borderColor='var(--amber-dk)'" onmouseout="this.style.borderColor='${isSuperTarget?'var(--amber)':'var(--border2)'}'">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+                    ${isSuperTarget?'En cours…':'Déplacer'}
+                </button>
+                `:''}
+                <button onclick="rotatePlan(${i})"
+                        style="flex:1;background:#18181b;border:1px solid var(--border2);border-radius:7px;padding:7px;cursor:pointer;color:var(--muted);font-size:0.7rem;font-weight:700;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:5px;"
+                        onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--muted)'">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
+                    Rotation ${plan.rotation||0}°
+                </button>
+            </div>
+
+            <!-- L4 : Opacité -->
+            <div style="display:flex;align-items:center;gap:7px;">
+                <span style="font-size:0.65rem;color:var(--muted);flex-shrink:0;">Opacité</span>
+                <input type="range" min="0.05" max="1" step="0.05" value="${plan.opacity??1}"
+                       style="-webkit-appearance:none;height:3px;border-radius:2px;background:var(--border2);outline:none;cursor:pointer;flex:1;"
+                       oninput="setPlanOpacity(${i},+this.value);document.getElementById('op${i}').textContent=Math.round(this.value*100)+'%'"/>
+                <span id="op${i}" style="font-size:0.65rem;color:var(--amber);width:30px;text-align:right;font-weight:700;flex-shrink:0;">${Math.round((plan.opacity??1)*100)}%</span>
+            </div>
+
+        </div>`}).join('');
+
+    const superBtn = (state.plans.length > 1 && state.superpositionMode) ? `
+    <div style="background:var(--surface);border:1px solid var(--amber-dk);border-radius:13px;padding:13px;">
         <div style="font-size:0.68rem;color:var(--amber);background:#1c0f00;border-radius:8px;padding:8px 10px;line-height:1.6;">
             ${state.superpositionClick1
                 ?`<b>2.</b> Cliquez la position cible sur le plan de référence`
-                :`<b>1.</b> Cliquez un point sur le plan à déplacer`}
-        </div>`:''}
+                :`<b>1.</b> Cliquez un point sur le plan ${(state.superpositionTargetIdx||1)+1} (surligné)`}
+        </div>
+        <button onclick="toggleSuperpositionMode()" style="margin-top:8px;background:#18181b;color:var(--muted);border:1px solid var(--border2);border-radius:7px;padding:4px 10px;cursor:pointer;font-size:0.7rem;font-family:inherit;">✕ Annuler</button>
     </div>` : '';
 
     return`
@@ -1014,11 +1093,11 @@ function buildToolList(type){
     if(!tools.length) return`<p style="font-size:0.7rem;color:var(--border2);text-transform:uppercase;letter-spacing:0.07em;text-align:center;padding:18px 0;">Aucun outil</p>`;
     return`<div style="display:flex;flex-direction:column;gap:7px;" class="slide-d">`+tools.map(tool=>{
         const isActive=state.activeToolId===tool.id;
-        const isTr=tool.type==='TRANCHEE', isPt=tool.type==='POINT', isAr=tool.type==='AREA';
+        const isTr=tool.type==='TRANCHEE', isPt=tool.type==='POINT', isAr=tool.type==='AREA', isTerr=tool.type==='TERRASSEMENT';
         const isHidden=!!tool.hidden;
-        const len=tool.measurements.reduce((a,p)=>a+calculateLength(p,isAr||isTr),0);
-        const area=isAr?tool.measurements.reduce((a,p)=>a+calculateArea(p),0):0;
-        const vol=isTr?len*tool.trancheeW*tool.trancheeD:0;
+        const len=tool.measurements.reduce((a,p)=>a+calculateLength(p,isAr||isTr||isTerr),0);
+        const area=(isAr||isTerr)?tool.measurements.reduce((a,p)=>a+calculateArea(p),0):0;
+        const vol=isTr?len*tool.trancheeW*tool.trancheeD : isTerr?area*(tool.terrZ||1):0;
         const sz=tool.pointSize||12;
         const preview=isPt
             ?`<div style="color:${isHidden?'var(--muted)':tool.color};opacity:${isHidden?0.35:1};transition:all 0.2s;">${VRD_ICONS[tool.vrdIcon||'regard'].svg}</div>`
@@ -1037,11 +1116,20 @@ function buildToolList(type){
                     <button onclick="event.stopPropagation();deleteTool('${tool.id}')" style="background:#18181b;border:1px solid var(--border2);border-radius:6px;padding:3px 6px;cursor:pointer;color:var(--muted);transition:all 0.1s;" onmouseover="this.style.color='#ef4444';this.style.borderColor='#450a0a';this.style.background='#1f0808'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border2)';this.style.background='#18181b'"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
                 </div>
             </div>
+            ${state.pendingDeleteTool===tool.id ? `
+            <div onclick="event.stopPropagation()" style="padding:7px 9px;background:#1f0808;border:1px solid #450a0a;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                <span style="font-size:0.67rem;color:#fca5a5;">Supprimer ?</span>
+                <div style="display:flex;gap:5px;">
+                    <button onclick="event.stopPropagation();confirmDeleteTool()" style="background:#dc2626;color:#fff;border:none;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:0.68rem;font-weight:700;font-family:inherit;">Oui</button>
+                    <button onclick="event.stopPropagation();cancelDeleteTool()" style="background:#27272a;color:var(--muted);border:none;border-radius:5px;padding:3px 10px;cursor:pointer;font-size:0.68rem;font-family:inherit;">Non</button>
+                </div>
+            </div>` : ''}
             <div style="display:flex;justify-content:space-between;align-items:center;padding-top:6px;border-top:1px solid var(--border);">
                 <span style="font-size:0.6rem;color:var(--border2);text-transform:uppercase;letter-spacing:0.07em;">${isTr?`${tool.trancheeW}m×${tool.trancheeD}m`:isPt?`${sz}px · unités`:isAr?'surface':'linéaire'}</span>
                 <div style="text-align:right;line-height:1.3;">
                     ${isTr?`<div style="font-family:monospace;font-weight:700;color:var(--amber);font-size:0.75rem;">${vol.toFixed(2)} m³</div><div style="font-family:monospace;font-size:0.68rem;color:var(--muted);">${len.toFixed(2)} ml</div>`:''}
                     ${isAr?`<div style="font-family:monospace;font-weight:700;color:var(--amber);font-size:0.75rem;">${area.toFixed(2)} m²</div><div style="font-family:monospace;font-size:0.68rem;color:var(--muted);">${len.toFixed(2)} ml</div>`:''}
+                    ${isTerr?`<div style="font-family:monospace;font-weight:700;color:var(--amber);font-size:0.75rem;">${tool.terrType==='remblais'?'+':'-'}${vol.toFixed(2)} m³</div><div style="font-size:0.6rem;font-weight:700;color:${tool.terrType==='remblais'?'#fdba74':'#93c5fd'};">${tool.terrType==='remblais'?'▲ Remblais':'▼ Déblais'}</div>`:''}
                     ${tool.type==='VRD'?`<div style="font-family:monospace;font-weight:700;color:var(--amber);font-size:0.75rem;">${len.toFixed(2)} ml</div>`:''}
                     ${isPt?`<div style="font-family:monospace;font-weight:700;color:var(--amber);font-size:0.75rem;">${tool.measurements.length} u</div>`:''}
                 </div>
@@ -1088,22 +1176,48 @@ function drawCanvas(){
     }
     // Réticule superposition (suit le curseur)
     if(state.superpositionMode){
-        ctx.strokeStyle='rgba(245,158,11,0.8)'; ctx.lineWidth=1;
         const mx=state.mousePos.x, my=state.mousePos.y;
-        ctx.beginPath(); ctx.moveTo(mx-20,my); ctx.lineTo(mx+20,my); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(mx,my-20); ctx.lineTo(mx,my+20); ctx.stroke();
+        ctx.strokeStyle='rgba(245,158,11,0.7)'; ctx.lineWidth=1;
+        ctx.beginPath(); ctx.moveTo(mx-18,my); ctx.lineTo(mx+18,my); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(mx,my-18); ctx.lineTo(mx,my+18); ctx.stroke();
         ctx.beginPath(); ctx.arc(mx,my,4,0,2*Math.PI); ctx.stroke();
-    }
-    // Point 1 capturé
-    if(state.superpositionMode && state.superpositionClick1){
-        const c=state.superpositionClick1;
-        ctx.strokeStyle='#f59e0b'; ctx.lineWidth=2;
-        ctx.beginPath(); ctx.arc(c.x,c.y,8,0,2*Math.PI); ctx.stroke();
-        ctx.fillStyle='rgba(245,158,11,0.3)'; ctx.fill();
-        ctx.beginPath();
-        ctx.moveTo(c.x-16,c.y); ctx.lineTo(c.x+16,c.y);
-        ctx.moveTo(c.x,c.y-16); ctx.lineTo(c.x,c.y+16);
-        ctx.stroke();
+
+        // Flèche entre clic1 et curseur
+        if(state.superpositionClick1){
+            const c=state.superpositionClick1;
+            const ex=mx, ey=my;
+            const dx=ex-c.x, dy=ey-c.y;
+            const len=Math.sqrt(dx*dx+dy*dy);
+            // Ligne pointillée
+            ctx.strokeStyle='rgba(245,158,11,0.9)'; ctx.lineWidth=1.5;
+            ctx.setLineDash([6,4]);
+            ctx.beginPath(); ctx.moveTo(c.x,c.y); ctx.lineTo(ex,ey); ctx.stroke();
+            ctx.setLineDash([]);
+            // Tête de flèche
+            if(len>10){
+                const angle=Math.atan2(dy,dx);
+                const al=12, aw=0.4;
+                ctx.fillStyle='rgba(245,158,11,0.9)';
+                ctx.beginPath();
+                ctx.moveTo(ex,ey);
+                ctx.lineTo(ex-al*Math.cos(angle-aw), ey-al*Math.sin(angle-aw));
+                ctx.lineTo(ex-al*Math.cos(angle+aw), ey-al*Math.sin(angle+aw));
+                ctx.closePath(); ctx.fill();
+            }
+            // Cercle point 1
+            ctx.strokeStyle='#f59e0b'; ctx.lineWidth=2;
+            ctx.beginPath(); ctx.arc(c.x,c.y,6,0,2*Math.PI); ctx.stroke();
+            ctx.fillStyle='rgba(245,158,11,0.25)'; ctx.fill();
+            // Distance en px → mètres si disponible
+            if(state.pixelsPerMeter && len > 5){
+                const dist=(len/state.pixelsPerMeter).toFixed(2);
+                const mx2=(c.x+ex)/2, my2=(c.y+ey)/2;
+                ctx.fillStyle='rgba(15,15,15,0.75)';
+                ctx.beginPath(); ctx.roundRect(mx2-22,my2-10,44,16,4); ctx.fill();
+                ctx.fillStyle='#f59e0b'; ctx.font='bold 10px monospace';
+                ctx.textAlign='center'; ctx.fillText(dist+' m',mx2,my2+2); ctx.textAlign='left';
+            }
+        }
     }
     if(state.isEraserMode){
         ctx.strokeStyle='rgba(239,68,68,0.7)';ctx.lineWidth=1.5;
@@ -1136,6 +1250,43 @@ function drawShape(points,tool,isPreview){
         else if(ik==='bouche'){ ctx.strokeRect(p.x-s*0.6,p.y-s*0.2,s*1.2,s*1.1);ctx.strokeRect(p.x-s*0.3,p.y-s*0.8,s*0.6,s*0.6); }
         else if(ik==='poteau'){ ctx.beginPath();ctx.moveTo(p.x,p.y+s);ctx.lineTo(p.x,p.y-s);ctx.moveTo(p.x-s*0.6,p.y-s);ctx.lineTo(p.x+s*0.6,p.y-s);ctx.stroke(); }
         else if(ik==='lampadaire'){ ctx.beginPath();ctx.moveTo(p.x,p.y+s);ctx.lineTo(p.x,p.y-s*0.3);ctx.quadraticCurveTo(p.x,p.y-s,p.x+s*0.7,p.y-s);ctx.stroke();ctx.beginPath();ctx.arc(p.x+s*0.7,p.y-s,s*0.25,0,2*Math.PI);ctx.fillStyle='#fff';ctx.fill(); }
+        else if(ik==='compteur'){
+            // Cadran avec aiguille
+            ctx.beginPath();ctx.arc(p.x,p.y-s*0.1,s*0.7,0,2*Math.PI);ctx.stroke();
+            ctx.beginPath();ctx.moveTo(p.x,p.y-s*0.1);ctx.lineTo(p.x+s*0.5,p.y-s*0.6);ctx.stroke();
+            ctx.beginPath();ctx.arc(p.x,p.y-s*0.1,s*0.15,0,2*Math.PI);ctx.fillStyle='#fff';ctx.fill();
+            ctx.beginPath();ctx.moveTo(p.x-s*0.5,p.y+s*0.6);ctx.lineTo(p.x+s*0.5,p.y+s*0.6);ctx.stroke();
+        }
+        else if(ik==='chambre'){
+            // Boîte avec câbles en haut
+            ctx.strokeRect(p.x-s*0.8,p.y-s*0.1,s*1.6,s*0.9);
+            ctx.beginPath();
+            ctx.moveTo(p.x-s*0.4,p.y-s*0.1);ctx.lineTo(p.x-s*0.4,p.y-s*0.7);
+            ctx.moveTo(p.x,p.y-s*0.1);ctx.lineTo(p.x,p.y-s*0.7);
+            ctx.moveTo(p.x+s*0.4,p.y-s*0.1);ctx.lineTo(p.x+s*0.4,p.y-s*0.7);
+            ctx.stroke();
+        }
+        else if(ik==='avaloir'){
+            // Grille elliptique
+            ctx.beginPath();ctx.ellipse(p.x,p.y,s*0.8,s*0.5,0,0,2*Math.PI);ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(p.x-s*0.4,p.y-s*0.4);ctx.lineTo(p.x-s*0.4,p.y+s*0.4);
+            ctx.moveTo(p.x,p.y-s*0.5);ctx.lineTo(p.x,p.y+s*0.5);
+            ctx.moveTo(p.x+s*0.4,p.y-s*0.4);ctx.lineTo(p.x+s*0.4,p.y+s*0.4);
+            ctx.moveTo(p.x-s*0.8,p.y);ctx.lineTo(p.x+s*0.8,p.y);
+            ctx.stroke();
+        }
+        else if(ik==='borne'){
+            // Cylindre arrondi
+            ctx.beginPath();ctx.roundRect(p.x-s*0.3,p.y-s*0.8,s*0.6,s*1.4,s*0.3);ctx.stroke();
+            ctx.beginPath();ctx.moveTo(p.x-s*0.5,p.y+s*0.7);ctx.lineTo(p.x+s*0.5,p.y+s*0.7);ctx.stroke();
+        }
+        else if(ik==='coffret'){
+            // Armoire avec séparation centrale
+            ctx.strokeRect(p.x-s*0.6,p.y-s*0.8,s*1.2,s*1.5);
+            ctx.beginPath();ctx.moveTo(p.x,p.y-s*0.8);ctx.lineTo(p.x,p.y+s*0.7);ctx.stroke();
+            ctx.beginPath();ctx.arc(p.x-s*0.3,p.y,s*0.18,0,2*Math.PI);ctx.stroke();
+        }
         ctx.restore(); return;
     }
 
@@ -1154,6 +1305,54 @@ function drawShape(points,tool,isPreview){
         if(!isPreview){
             ctx.setLineDash([]); ctx.fillStyle=color; ctx.strokeStyle='#fff'; ctx.lineWidth=1.5;
             points.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,3,0,2*Math.PI);ctx.fill();ctx.stroke();});
+        }
+        ctx.restore(); return;
+    }
+
+    if(type==='TERRASSEMENT'){
+        if(points.length < 2){ ctx.restore(); return; }
+        const tracePoly = () => {
+            ctx.beginPath();
+            ctx.moveTo(points[0].x,points[0].y);
+            for(let i=1;i<points.length;i++) ctx.lineTo(points[i].x,points[i].y);
+            if(points.length>=3) ctx.closePath();
+        };
+        if(!isPreview && points.length>=3){
+            ctx.save();
+            tracePoly();
+            ctx.clip();
+            // Fond semi-transparent
+            ctx.fillStyle=color+'18';
+            ctx.fill();
+            // Hachures diagonales
+            const bb={x0:Math.min(...points.map(p=>p.x)),x1:Math.max(...points.map(p=>p.x)),
+                      y0:Math.min(...points.map(p=>p.y)),y1:Math.max(...points.map(p=>p.y))};
+            ctx.strokeStyle=color+'70'; ctx.lineWidth=1; ctx.setLineDash([]);
+            const isRemblais = tool.terrType==='remblais';
+            const sym = isRemblais ? '▲' : '▼';
+            ctx.fillStyle = color + 'cc';
+            ctx.font = 'bold 10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const stepX = 18, stepY = 16;
+            for(let y2 = bb.y0 + stepY*0.5; y2 < bb.y1; y2 += stepY){
+                for(let x2 = bb.x0 + stepX*0.5; x2 < bb.x1; x2 += stepX){
+                    ctx.fillText(sym, x2, y2);
+                }
+            }
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'alphabetic';
+            ctx.restore();
+        }
+        // Contour du polygone
+        tracePoly();
+        ctx.strokeStyle=color; ctx.lineWidth=1.5;
+        ctx.setLineDash(isPreview?[7,4]:[]);
+        ctx.stroke(); ctx.setLineDash([]);
+        // Points de tracé
+        if(!isPreview){
+            ctx.fillStyle='#fff'; ctx.strokeStyle=color; ctx.lineWidth=1.5;
+            points.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,3.5,0,2*Math.PI);ctx.fill();ctx.stroke();});
         }
         ctx.restore(); return;
     }
@@ -1177,10 +1376,10 @@ function drawShape(points,tool,isPreview){
 
 // ACTIONS
 function toggleTab(tabName){
-    if(['VRD','TRANCHEE','AREA','POINT','ITEM','SUMMARY'].includes(tabName)&&!state.pixelsPerMeter) return;
+    if(['VRD','TRANCHEE','AREA','TERRASSEMENT','POINT','ITEM','SUMMARY'].includes(tabName)&&!state.pixelsPerMeter) return;
 
     // Boutons d'outils : ouvre le creator bar avec le bon type, tiroir ITEM reste visible
-    if(['VRD','TRANCHEE','AREA','POINT'].includes(tabName)){
+    if(['VRD','TRANCHEE','AREA','TERRASSEMENT','POINT'].includes(tabName)){
         if(state.isEraserMode) state.isEraserMode=false;
         // Sélectionner le premier outil existant de ce type comme outil actif de dessin
         const typed=state.tools.filter(t=>t.type===tabName);
@@ -1234,19 +1433,32 @@ function setPlanScale(i, val) {
     }
 }
 
+function rotatePlan(i) {
+    const newPlans = state.plans.map((p, idx) => idx===i ? {...p, rotation: ((p.rotation||0) + 90) % 360} : p);
+    setState({ plans: newPlans });
+}
+function setSuperTarget(i) {
+    // Active le mode superposition et sélectionne le plan i comme cible
+    setState({ superpositionMode: true, superpositionTargetIdx: i, superpositionClick1: null });
+}
 function toggleSuperpositionMode() {
-    setState({ superpositionMode: !state.superpositionMode, superpositionClick1: null });
+    setState({ superpositionMode: !state.superpositionMode, superpositionClick1: null, superpositionTargetIdx: null });
 }
 
 function toggleEraser(){ setState({isEraserMode:!state.isEraserMode}); }
 function resetScale(){ setState({pixelsPerMeter:null,appState:'SETUP_SCALE'}); }
 function setActiveTool(id){ setState({activeToolId:id}); }
 function deleteTool(id){
-    if(!confirm("Supprimer cet outil et toutes ses mesures ?")) return;
-    const newTools=state.tools.filter(t=>t.id!==id); let upd={tools:newTools};
+    setState({ pendingDeleteTool: id });
+}
+function confirmDeleteTool(){
+    const id = state.pendingDeleteTool;
+    if(!id) return;
+    const newTools=state.tools.filter(t=>t.id!==id); let upd={tools:newTools, pendingDeleteTool:null};
     if(state.activeToolId===id){const rem=newTools.filter(t=>t.type===state.activeTab);upd.activeToolId=rem.length?rem[0].id:null;}
     setState(upd);
 }
+function cancelDeleteTool(){ setState({ pendingDeleteTool: null }); }
 
 // IMPORT/EXPORT
 async function handleFileUpload(event){
@@ -1261,8 +1473,32 @@ async function handleFileUpload(event){
 // Calcule le scale visuel d'un plan par rapport au plan de référence
 function computePlanScale(plan, ref) {
     if (!plan.scaleRatio || !ref.scaleRatio) return 1;
-    // Scale = ratio_ref / ratio_plan (ex: ref=50, plan=100 → plan affiché à 50%)
     return parseFloat(ref.scaleRatio) / parseFloat(plan.scaleRatio);
+}
+
+// Retourne le transform CSS correct selon la rotation
+function planCssTransform(plan, sc) {
+    const ox = plan.offsetX || 0;
+    const oy = plan.offsetY || 0;
+    const rot = plan.rotation || 0;
+    const w = plan.w * sc;
+    const h = plan.h * sc;
+    switch(rot) {
+        case  90: return `translate(${ox}px,${oy + w}px) rotate(90deg) scale(${sc})`;
+        case 180: return `translate(${ox + w}px,${oy + h}px) rotate(180deg) scale(${sc})`;
+        case 270: return `translate(${ox + h}px,${oy}px) rotate(270deg) scale(${sc})`;
+        default:  return `translate(${ox}px,${oy}px) scale(${sc})`;
+    }
+}
+
+// Retourne le bounding box d'un plan dans l'espace container
+function planBBox(plan, sc) {
+    const ox = plan.offsetX || 0;
+    const oy = plan.offsetY || 0;
+    const rot = (plan.rotation || 0) % 180;
+    const ew = rot === 90 ? plan.h * sc : plan.w * sc; // effective width
+    const eh = rot === 90 ? plan.w * sc : plan.h * sc; // effective height
+    return { x: ox, y: oy, w: ew, h: eh };
 }
 
 function loadImageFromUrl(src, isPdf){
@@ -1275,6 +1511,7 @@ function loadImageFromUrl(src, isPdf){
             w:img.width, h:img.height,
             name: `Plan ${state.plans.length + 1}`,
             scaleRatio,
+            rotation: 0,
             offsetX: 0, offsetY: 0
         };
         const newPlans = [...state.plans, newPlan];
@@ -1317,7 +1554,7 @@ function setPlanOpacity(i, val){
     if(imgs[i]) imgs[i].style.opacity=val;
 }
 function applyScaleRatio(){const el=document.getElementById('scaleInput');if(el)state.scaleRatioInput=el.value;const s=parseFloat(state.scaleRatioInput);if(isNaN(s)||s<=0)return alert("Échelle invalide.");setState({pixelsPerMeter:(1000*72*2.5)/(25.4*s),appState:'MEASURE'});toggleTab('ITEM');}
-function exportProjectData(){if(!state.plans.length)return alert("Aucun projet.");setState({isLoading:true});setTimeout(()=>{const d={version:"3.0",plans:state.plans.map(p=>({src:p.src,isPdf:p.isPdf,opacity:p.opacity,w:p.w,h:p.h,name:p.name||'',scaleRatio:p.scaleRatio||'50',offsetX:p.offsetX||0,offsetY:p.offsetY||0})),imageSize:state.imageSize,scaleRatioInput:state.scaleRatioInput,pixelsPerMeter:state.pixelsPerMeter,tools:state.tools,folders:state.folders||[],appState:state.appState};const a=document.createElement('a');a.href="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(d));a.download="mapulator_projet.json";a.click();setState({isLoading:false});},100);}
+function exportProjectData(){if(!state.plans.length)return alert("Aucun projet.");setState({isLoading:true});setTimeout(()=>{const d={version:"3.0",plans:state.plans.map(p=>({src:p.src,isPdf:p.isPdf,opacity:p.opacity,w:p.w,h:p.h,name:p.name||'',scaleRatio:p.scaleRatio||'50',rotation:p.rotation||0,offsetX:p.offsetX||0,offsetY:p.offsetY||0})),imageSize:state.imageSize,scaleRatioInput:state.scaleRatioInput,pixelsPerMeter:state.pixelsPerMeter,tools:state.tools,folders:state.folders||[],appState:state.appState};const a=document.createElement('a');a.href="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(d));a.download="mapulator_projet.json";a.click();setState({isLoading:false});},100);}
 
 function importProjectData(event){const file=event.target.files[0];if(!file)return;setState({isLoading:true});const reader=new FileReader();reader.onload=e=>{try{const d=JSON.parse(e.target.result);
     // Support ancien format v1/v2
@@ -1365,9 +1602,9 @@ async function generatePrintByFolders(){
     }
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
-    const TYPE_UNIT  = {VRD:'ml', TRANCHEE:'m³', AREA:'m²', POINT:'u'};
-    const TYPE_LABEL = {VRD:'VRD', TRANCHEE:'Tranchée', AREA:'Surface', POINT:'Pointage'};
-    const TYPE_ORDER = {VRD:0, AREA:1, TRANCHEE:2, POINT:3};
+    const TYPE_UNIT  = {VRD:'ml', TRANCHEE:'m³', AREA:'m²', TERRASSEMENT:'m³', POINT:'u'};
+    const TYPE_LABEL = {VRD:'VRD', TRANCHEE:'Tranchée', AREA:'Surface', TERRASSEMENT:'Terrassement', POINT:'Pointage'};
+    const TYPE_ORDER = {VRD:0, AREA:1, TRANCHEE:2, TERRASSEMENT:3, POINT:4};
     const W=210, pad=14, colType=130, colNet=158, colMaj=196;
     const RH=6.5, GH=5;
 
@@ -1442,7 +1679,12 @@ async function generatePrintByFolders(){
                 if(t.type==='VRD') net=t.measurements.reduce((a,p)=>a+calculateLength(p,false),0);
                 else if(t.type==='TRANCHEE'){const l=t.measurements.reduce((a,p)=>a+calculateLength(p,false),0);net=l*(t.trancheeW||0.8)*(t.trancheeD||1.2);}
                 else if(t.type==='AREA') net=t.measurements.reduce((a,p)=>a+calculateArea(p),0);
+                else if(t.type==='TERRASSEMENT'){const a=t.measurements.reduce((s,p)=>s+calculateArea(p),0);net=a*(t.terrZ||1);}
                 else net=t.measurements.length;
+                // Label dynamique déblais/remblais
+                const tLabel = t.type==='TERRASSEMENT'
+                    ? (t.terrType==='remblais'?'Remblais':'Déblais')
+                    : (TYPE_LABEL[t.type]||'');
                 const unit=TYPE_UNIT[t.type]||'';
                 const maj = t.type==='POINT' ? null : net*1.1;
                 if(i%2===0){doc.setFillColor(250,250,250);doc.rect(pad,y-4,W-pad*2,RH,'F');}
@@ -1451,11 +1693,17 @@ async function generatePrintByFolders(){
                 doc.setTextColor(30,30,30); doc.setFont('helvetica','normal'); doc.setFontSize(8);
                 doc.text(t.name, pad+7, y);
                 doc.setTextColor(130,130,130); doc.setFontSize(7);
-                doc.text(TYPE_LABEL[t.type]||'', colType, y, {align:'right'});
+                doc.text(tLabel, colType, y, {align:'right'});
+                const netDisplay = t.type==='TERRASSEMENT'
+                    ? (t.terrType==='remblais'?'+':'-') + net.toFixed(2) + ' ' + unit
+                    : net.toFixed(2) + ' ' + unit;
+                const majDisplay = maj!==null
+                    ? (t.type==='TERRASSEMENT'?(t.terrType==='remblais'?'+':'-'):'') + (maj!==null?maj.toFixed(2):'') + ' ' + unit
+                    : '—';
                 doc.setTextColor(50,50,50); doc.setFontSize(8);
-                doc.text(net.toFixed(2)+' '+unit, colNet, y, {align:'right'});
+                doc.text(netDisplay, colNet, y, {align:'right'});
                 doc.setTextColor(180,82,9); doc.setFont('helvetica','bold');
-                doc.text(maj!==null ? maj.toFixed(2)+' '+unit : '—', colMaj, y, {align:'right'});
+                doc.text(majDisplay, colMaj, y, {align:'right'});
                 y += RH;
             });
             y += GH;
@@ -1486,12 +1734,12 @@ async function generatePrintImageForTools(tools, title){
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
 
-    const TYPE_UNIT  = {VRD:'ml', TRANCHEE:'m³', AREA:'m²', POINT:'u'};
-    const TYPE_LABEL = {VRD:'VRD', TRANCHEE:'Tranchée', AREA:'Surface', POINT:'Pointage'};
+    const TYPE_UNIT  = {VRD:'ml', TRANCHEE:'m³', AREA:'m²', TERRASSEMENT:'m³', POINT:'u'};
+    const TYPE_LABEL = {VRD:'VRD', TRANCHEE:'Tranchée', AREA:'Surface', TERRASSEMENT:'Terrassement', POINT:'Pointage'};
     const W=210, pad=14, colType=130, colNet=158, colMaj=196;
 
     // Grouper par indice puis trier : VRD(ml) → AREA(m²) → TRANCHEE(m³) → POINT(u)
-    const TYPE_ORDER = {VRD:0, AREA:1, TRANCHEE:2, POINT:3};
+    const TYPE_ORDER = {VRD:0, AREA:1, TRANCHEE:2, TERRASSEMENT:3, POINT:4};
     const groups={};
     tools.forEach(t=>{
         const key=(t.indice&&t.indice.trim())?t.indice.trim().toUpperCase():'DIVERS';
@@ -1613,13 +1861,11 @@ els.drawCanvas.addEventListener('click',e=>{
 
     // ── Mode Superposition ──
     if(state.superpositionMode){
+        const targetIdx = state.superpositionTargetIdx ?? (state.plans.length > 1 ? state.plans.length-1 : 0);
         if(!state.superpositionClick1){
-            // Premier clic : point sur le plan à déplacer
             setState({superpositionClick1:{x:pt.x,y:pt.y}});
         } else {
-            // Second clic : décaler le dernier plan (non-référence) pour aligner c1→pt
             const c1=state.superpositionClick1;
-            const targetIdx=state.plans.length>1?state.plans.length-1:0;
             const newPlans=state.plans.map((p,i)=>i===targetIdx
                 ?{...p,offsetX:(p.offsetX||0)+(pt.x-c1.x),offsetY:(p.offsetY||0)+(pt.y-c1.y)}:p);
             setState({plans:newPlans,superpositionClick1:null});
@@ -1634,7 +1880,7 @@ els.drawCanvas.addEventListener('click',e=>{
     }
     if(state.pixelsPerMeter && state.activeToolId){
         const activeTool=state.tools.find(t=>t.id===state.activeToolId);
-        if(!activeTool||!['VRD','TRANCHEE','AREA','POINT'].includes(activeTool.type)) return;
+        if(!activeTool||!['VRD','TRANCHEE','AREA','TERRASSEMENT','POINT'].includes(activeTool.type)) return;
         if(activeTool.type==='POINT'){setState({tools:state.tools.map(t=>t.id===state.activeToolId?{...t,measurements:[...t.measurements,[pt]]}:t)});return;}
         let upd={currentLine:[...state.currentLine,pt]};
         if(state.currentLine.length===0) upd.isDrawerOpen=false;

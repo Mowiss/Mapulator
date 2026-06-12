@@ -343,6 +343,7 @@ const VRD_ICONS = {
     candelabre_double:{ label:'Candélabre double',    svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="6" r="4"/><circle cx="16" cy="6" r="4"/><line x1="12" y1="10" x2="12" y2="22"/></svg>` },
     borne_lumineuse:  { label:'Borne lumineuse',      svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="2" width="6" height="20" rx="1.5"/><line x1="9" y1="5" x2="15" y2="5"/><line x1="9" y1="10" x2="15" y2="10"/><circle cx="12" cy="7.5" r="2.5"/></svg>` },
     chambre_telecom:  { label:'Chambre télécom',      svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="7" y="2" width="10" height="20" rx="1.5"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="7" y1="2" x2="17" y2="12"/><line x1="7" y1="12" x2="17" y2="22"/></svg>` },
+    portail:          { label:'Portail',            svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="10" width="6" height="7" rx="1"/><rect x="16" y="10" width="6" height="7" rx="1"/><line x1="16" y1="10" x2="9" y2="4"/></svg>` },
     panneau_signa:    { label:'Panneau signalisation', svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="7" y="2" width="10" height="10" rx="1.5"/><line x1="12" y1="12" x2="12" y2="22"/></svg>` },
     borne_irve:       { label:'Coffret',               svg:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="2" width="14" height="20" rx="1.5"/><polyline points="13,4 9,13 13,13 11,20" fill="none"/></svg>` },
 };
@@ -1270,7 +1271,15 @@ function drawVrdIcon(ctx, ik, px, py, s){
         ctx.beginPath();ctx.moveTo(px-rw/2,py);ctx.lineTo(px+rw/2,py);ctx.stroke();
         ctx.beginPath();ctx.moveTo(px-rw/2,py-rh/2);ctx.lineTo(px+rw/2,py);ctx.stroke();
         ctx.beginPath();ctx.moveTo(px-rw/2,py);ctx.lineTo(px+rw/2,py+rh/2);ctx.stroke();
-    } else if(ik==='panneau_signa'){
+    } else if(ik==='portail'){
+        // Pilier gauche
+        ctx.strokeRect(px-s*1.5, py-s*0.4, s*0.65, s*0.85);
+        // Pilier droit
+        ctx.strokeRect(px+s*0.85, py-s*0.4, s*0.65, s*0.85);
+        // Vantail diagonal
+        ctx.beginPath();ctx.moveTo(px+s*0.85, py-s*0.4);ctx.lineTo(px-s*0.15, py-s*1.3);ctx.stroke();
+    }
+    else if(ik==='panneau_signa'){
         ctx.strokeRect(px-s*0.7,py-s*1.8,s*1.4,s*1.4);
         ctx.beginPath();ctx.moveTo(px,py-s*0.4);ctx.lineTo(px,py+s*1.5);ctx.stroke();
     } else if(ik==='borne_irve'){
@@ -1280,38 +1289,47 @@ function drawVrdIcon(ctx, ik, px, py, s){
 }
 
 // ─── Génère un dataUrl 32x32 représentant l'icône d'un outil pour le PDF ───
-function makeToolIconDataUrl(tool){
-    const SZ=32, c=document.createElement('canvas'); c.width=c.height=SZ;
-    const ctx=c.getContext('2d'); ctx.clearRect(0,0,SZ,SZ);
-    const col=tool.color||'#3b82f6';
-    ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineCap='round'; ctx.lineJoin='round';
-    const cx=SZ/2, cy=SZ/2;
-    if(tool.type==='VRD'){
-        ctx.lineWidth=3;
-        ctx.beginPath();ctx.moveTo(2,cy+3);ctx.lineTo(8,cy-3);ctx.lineTo(14,cy+3);ctx.lineTo(20,cy-3);ctx.lineTo(26,cy+2);ctx.lineTo(30,cy);ctx.stroke();
-    } else if(tool.type==='TRANCHEE'){
-        ctx.globalAlpha=0.55; ctx.fillRect(1,cy-7,SZ-2,14); ctx.globalAlpha=1;
-        ctx.lineWidth=2; ctx.strokeRect(1,cy-7,SZ-2,14);
-    } else if(tool.type==='AREA'){
-        ctx.globalAlpha=0.25;
-        ctx.beginPath();ctx.moveTo(cx,2);ctx.lineTo(SZ-2,SZ-2);ctx.lineTo(2,SZ-2);ctx.closePath();ctx.fill();
-        ctx.globalAlpha=1; ctx.lineWidth=2; ctx.stroke();
-    } else if(tool.type==='TERRASSEMENT'){
-        const isR=tool.terrType==='remblais';
-        ctx.lineWidth=2;
-        ctx.beginPath();
-        if(isR){ctx.moveTo(cx,4);ctx.lineTo(SZ-4,SZ-4);ctx.lineTo(4,SZ-4);ctx.closePath();}
-        else{ctx.moveTo(cx,SZ-4);ctx.lineTo(SZ-4,4);ctx.lineTo(4,4);ctx.closePath();}
-        ctx.globalAlpha=0.25; ctx.fill(); ctx.globalAlpha=1; ctx.stroke();
-    } else if(tool.type==='POINT'){
-        // Cercle coloré + icône blanche
-        ctx.lineWidth=2;
-        ctx.globalAlpha=0.8; ctx.beginPath();ctx.arc(cx,cy,14,0,2*Math.PI);ctx.fill(); ctx.globalAlpha=1;
-        ctx.beginPath();ctx.arc(cx,cy,14,0,2*Math.PI);ctx.stroke();
-        ctx.strokeStyle='#fff'; ctx.lineWidth=1.5;
-        drawVrdIcon(ctx, tool.vrdIcon||'regard_visite', cx, cy, 6);
+function drawToolIconPdf(doc, tool, x, y, size){
+    const rgb = hexToRgb(tool.color);
+    doc.setDrawColor(rgb.r, rgb.g, rgb.b);
+    doc.setFillColor(rgb.r, rgb.g, rgb.b);
+    const s = size, cx = x + s/2, cy = y + s/2;
+    if(tool.type === 'VRD'){
+        doc.setLineWidth(0.7);
+        doc.line(x, cy+0.6, x+s*0.22, cy-0.8);
+        doc.line(x+s*0.22, cy-0.8, x+s*0.5, cy+0.8);
+        doc.line(x+s*0.5, cy+0.8, x+s*0.78, cy-0.5);
+        doc.line(x+s*0.78, cy-0.5, x+s, cy);
+    } else if(tool.type === 'TRANCHEE'){
+        doc.setLineWidth(0.4);
+        doc.rect(x, cy-s*0.28, s, s*0.56, 'FD');
+    } else if(tool.type === 'AREA'){
+        doc.setLineWidth(0.4);
+        doc.triangle(cx, y+0.3, x+s-0.3, y+s-0.3, x+0.3, y+s-0.3, 'FD');
+    } else if(tool.type === 'TERRASSEMENT'){
+        doc.setLineWidth(0.4);
+        if(tool.terrType === 'remblais'){
+            doc.triangle(cx, y+0.3, x+s-0.3, y+s-0.3, x+0.3, y+s-0.3, 'FD');
+        } else {
+            doc.triangle(cx, y+s-0.3, x+s-0.3, y+0.3, x+0.3, y+0.3, 'FD');
+        }
+    } else if(tool.type === 'POINT'){
+        doc.circle(cx, cy, s*0.44, 'FD');
+        doc.setDrawColor(255,255,255);
+        doc.setLineWidth(0.35);
+        const ik = tool.vrdIcon || 'regard_visite';
+        if(ik==='regard_visite'){ doc.circle(cx, cy, s*0.22, 'S'); }
+        else if(ik==='vanne'){ doc.line(cx-s*0.2,cy-s*0.28,cx+s*0.2,cy+s*0.28); doc.line(cx+s*0.2,cy-s*0.28,cx-s*0.2,cy+s*0.28); }
+        else if(ik==='lampadaire'||ik==='candelabre_double'){ doc.circle(cx,cy-s*0.15,s*0.13,'S'); doc.line(cx,cy-s*0.02,cx,cy+s*0.28); }
+        else if(ik==='borne_lumineuse'||ik==='borne_irve'){ doc.rect(cx-s*0.1,cy-s*0.28,s*0.2,s*0.56,'S'); }
+        else if(ik==='portail'){
+            doc.rect(cx-s*0.42,cy-s*0.15,s*0.18,s*0.28,'S');
+            doc.rect(cx+s*0.24,cy-s*0.15,s*0.18,s*0.28,'S');
+            doc.line(cx+s*0.24,cy-s*0.15,cx+s*0.02,cy-s*0.42);
+        }
+        else { doc.rect(cx-s*0.22,cy-s*0.28,s*0.44,s*0.56,'S'); }
+        doc.setDrawColor(rgb.r,rgb.g,rgb.b);
     }
-    return c.toDataURL('image/png');
 }
 
 function drawShape(points,tool,isPreview){
@@ -1731,8 +1749,7 @@ async function generatePrintByFolders(){
                 const maj = t.type==='POINT' ? null : net*1.1;
                 if(i%2===0){doc.setFillColor(250,250,250);doc.rect(pad,y-4,W-pad*2,RH,'F');}
                 // Icône outil
-                const iconDataUrl = makeToolIconDataUrl(t);
-                doc.addImage(iconDataUrl, 'PNG', pad, y-4.5, 6, 6);
+                drawToolIconPdf(doc, t, pad, y-4.5, 6);
                 doc.setTextColor(30,30,30); doc.setFont('helvetica','normal'); doc.setFontSize(8);
                 doc.text(t.name, pad+8, y);
                 doc.setTextColor(130,130,130); doc.setFontSize(7);
@@ -1845,8 +1862,7 @@ async function generatePrintImageForTools(tools, title){
             if(i%2===0){ doc.setFillColor(250,250,250); doc.rect(pad,y-4,W-pad*2,RH,'F'); }
 
             // Icône outil
-            const iconDataUrl = makeToolIconDataUrl(t);
-            doc.addImage(iconDataUrl, 'PNG', pad, y-4.5, 6, 6);
+            drawToolIconPdf(doc, t, pad, y-4.5, 6);
 
             // Textes
             doc.setTextColor(30,30,30); doc.setFont('helvetica','normal'); doc.setFontSize(8);

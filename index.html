@@ -502,8 +502,17 @@ function renderCreatorBar() {
     const terrHtml = tab==='TERRASSEMENT' ? `
         <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
             <span style="font-size:0.6rem;color:var(--muted);white-space:nowrap;">Z</span>
-            <input type="number" step="0.01" value="${d.terrZ||'1.00'}" style="width:52px;" class="cr-input" oninput="state.creatorData.terrZ=this.value" onkeydown="handleCreatorKey(event)"/>
+            <input type="number" step="0.01" value="${d.terrZ||'1.00'}" style="width:48px;" class="cr-input" oninput="state.creatorData.terrZ=this.value" onkeydown="handleCreatorKey(event)"/>
             <span style="font-size:0.6rem;color:var(--muted);">m</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
+            <span style="font-size:0.6rem;color:var(--muted);white-space:nowrap;">Recul</span>
+            <input type="number" step="0.01" value="${d.terrRecul||'0.00'}" style="width:48px;" class="cr-input" oninput="state.creatorData.terrRecul=this.value" onkeydown="handleCreatorKey(event)"/>
+            <span style="font-size:0.6rem;color:var(--muted);">m</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
+            <span style="font-size:0.6rem;color:var(--muted);white-space:nowrap;">Talus 1/</span>
+            <input type="number" step="0.1" value="${d.terrRatio||'0'}" style="width:42px;" class="cr-input" title="Ratio de pente (0 = pas de talus)" oninput="state.creatorData.terrRatio=this.value" onkeydown="handleCreatorKey(event)"/>
         </div>
         <div style="display:flex;gap:4px;flex-shrink:0;">
             <button onclick="state.creatorData.terrType='deblais';renderCreatorBar()"
@@ -550,8 +559,8 @@ function selectVrdIcon(key) {
 }
 function handleCreatorKey(e) { e.stopPropagation(); if(e.key==='Enter') saveTool(); if(e.key==='Escape') cancelCreator(); }
 function openCreator(mode, toolId=null, forceType=null) {
-    let d={ name:'', color:COLORS[4], thickness:20, pointSize:12, indice:'', editingId:null, vrdIcon:'regard', trancheeW:'0.80', trancheeD:'1.20', terrZ:'1.00', terrType:'deblais' };
-    if(mode==='edit'&&toolId){ const t=state.tools.find(x=>x.id===toolId); if(t) d={name:t.name,color:t.color,thickness:t.thickness||20,pointSize:t.pointSize||12,indice:t.indice||'',editingId:t.id,vrdIcon:t.vrdIcon||'regard',trancheeW:String(t.trancheeW||'0.80'),trancheeD:String(t.trancheeD||'1.20'),terrZ:String(t.terrZ||'1.00'),terrType:t.terrType||'deblais'}; }
+    let d={ name:'', color:COLORS[4], thickness:20, pointSize:12, indice:'', editingId:null, vrdIcon:'regard_visite', trancheeW:'0.80', trancheeD:'1.20', terrZ:'1.00', terrType:'deblais', terrRecul:'0.00', terrRatio:'0' };
+    if(mode==='edit'&&toolId){ const t=state.tools.find(x=>x.id===toolId); if(t) d={name:t.name,color:t.color,thickness:t.thickness||20,pointSize:t.pointSize||12,indice:t.indice||'',editingId:t.id,vrdIcon:t.vrdIcon||'regard_visite',trancheeW:String(t.trancheeW||'0.80'),trancheeD:String(t.trancheeD||'1.20'),terrZ:String(t.terrZ||'1.00'),terrType:t.terrType||'deblais',terrRecul:String(t.terrRecul||'0.00'),terrRatio:String(t.terrRatio||'0')}; }
     // type effectif : forcé > outil édité > onglet actif
     const effectiveType = forceType || (d.editingId ? state.tools.find(t=>t.id===d.editingId)?.type : null) || state.activeTab;
     d.effectiveType = effectiveType;
@@ -574,6 +583,8 @@ function saveTool() {
         trancheeW:parseFloat(d.trancheeW)||0.8, trancheeD:parseFloat(d.trancheeD)||1.2,
         terrZ:parseFloat(d.terrZ)||1.0,
         terrType:d.terrType||'deblais',
+        terrRecul:parseFloat(d.terrRecul)||0,
+        terrRatio:parseFloat(d.terrRatio)||0,
         hidden: existing ? existing.hidden : false,
         measurements:existing?existing.measurements:[] };
     const newTools=[...state.tools]; const idx=newTools.findIndex(t=>t.id===newTool.id);
@@ -952,11 +963,12 @@ function buildToolCard(tool) {
     const isHidden=!!tool.hidden;
     const len=tool.measurements.reduce((a,p)=>a+calculateLength(p,isAr||isTr||isTerr),0);
     const area=(isAr||isTerr)?tool.measurements.reduce((a,p)=>a+calculateArea(p),0):0;
-    const vol=isTr?len*(tool.trancheeW||0.8)*(tool.trancheeD||1.2) : isTerr?area*(tool.terrZ||1):0;
+    const terrV = isTerr ? terrassementVolumes(tool) : null;
+    const vol=isTr?len*(tool.trancheeW||0.8)*(tool.trancheeD||1.2) : isTerr?terrV.total:0;
     const sz=tool.pointSize||12;
     const typeLabel={VRD:'VRD',TRANCHEE:'Tranchée',AREA:'Surface',TERRASSEMENT:'Terrassement',POINT:'Pointage'}[tool.type]||'';
     const preview=isPt
-        ?`<div style="color:${isHidden?'var(--muted)':tool.color};opacity:${isHidden?0.35:1};">${VRD_ICONS[tool.vrdIcon||'regard'].svg}</div>`
+        ?`<div style="color:${isHidden?'var(--muted)':tool.color};opacity:${isHidden?0.35:1};">${VRD_ICONS[tool.vrdIcon||'regard_visite'].svg}</div>`
         :`<div style="width:18px;height:${Math.max(isTr?(tool.thickness||20)/4:2,2)}px;border-radius:2px;background:${tool.color};opacity:${isHidden?0.2:isTr?0.5:1};flex-shrink:0;"></div>`;
     const eyeBtn=`<button onclick="event.stopPropagation();toggleToolVisibility('${tool.id}')" style="background:#18181b;border:1px solid var(--border2);border-radius:5px;padding:2px 5px;cursor:pointer;color:${isHidden?'var(--amber)':'var(--muted)'};transition:all 0.1s;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='${isHidden?'var(--amber)':'var(--muted)'}'">
         ${isHidden?`<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`:`<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`}
@@ -974,7 +986,7 @@ function buildToolCard(tool) {
                 <div style="text-align:right;margin-right:4px;line-height:1.2;">
                     ${isTr?`<div style="font-family:monospace;font-size:0.68rem;font-weight:700;color:var(--amber);">${vol.toFixed(2)} m³</div>`:''}
                     ${isAr?`<div style="font-family:monospace;font-size:0.68rem;font-weight:700;color:var(--amber);">${area.toFixed(2)} m²</div>`:''}
-                    ${isTerr?`<div style="font-family:monospace;font-size:0.68rem;font-weight:700;color:var(--amber);">${tool.terrType==='remblais'?'+':'-'}${vol.toFixed(2)} m³</div><div style="font-size:0.58rem;font-weight:700;color:${tool.terrType==='remblais'?'#fdba74':'#93c5fd'};">${tool.terrType==='remblais'?'▲':'▼'} ${tool.terrType==='remblais'?'Remblais':'Déblais'}</div>`:''}
+                    ${isTerr?`<div style="font-family:monospace;font-size:0.68rem;font-weight:700;color:var(--amber);">${tool.terrType==='remblais'?'+':'-'}${vol.toFixed(2)} m³</div><div style="font-size:0.55rem;color:var(--muted);font-family:monospace;">F ${terrV.fond.toFixed(1)}${terrV.recul>0?' · R '+terrV.recul.toFixed(1):''}${terrV.talus>0?' · T '+terrV.talus.toFixed(1):''}</div><div style="font-size:0.58rem;font-weight:700;color:${tool.terrType==='remblais'?'#fdba74':'#93c5fd'};">${tool.terrType==='remblais'?'▲':'▼'} ${tool.terrType==='remblais'?'Remblais':'Déblais'}</div>`:''}
                     ${tool.type==='VRD'?`<div style="font-family:monospace;font-size:0.68rem;font-weight:700;color:var(--amber);">${len.toFixed(2)} ml</div>`:''}
                     ${isPt?`<div style="font-family:monospace;font-size:0.68rem;font-weight:700;color:var(--amber);">${tool.measurements.length} u</div>`:''}
                 </div>
@@ -1101,7 +1113,7 @@ function buildToolList(type){
         const vol=isTr?len*tool.trancheeW*tool.trancheeD : isTerr?area*(tool.terrZ||1):0;
         const sz=tool.pointSize||12;
         const preview=isPt
-            ?`<div style="color:${isHidden?'var(--muted)':tool.color};opacity:${isHidden?0.35:1};transition:all 0.2s;">${VRD_ICONS[tool.vrdIcon||'regard'].svg}</div>`
+            ?`<div style="color:${isHidden?'var(--muted)':tool.color};opacity:${isHidden?0.35:1};transition:all 0.2s;">${VRD_ICONS[tool.vrdIcon||'regard_visite'].svg}</div>`
             :`<div style="width:22px;height:${Math.max(isTr?(tool.thickness||20)/3:3,2)}px;border-radius:2px;background:${tool.color};opacity:${isHidden?0.2:isTr?0.55:1};flex-shrink:0;transition:opacity 0.2s;"></div>`;
         const eyeBtn = `<button onclick="event.stopPropagation();toggleToolVisibility('${tool.id}')" title="${isHidden?'Afficher':'Masquer'}" style="background:#18181b;border:1px solid var(--border2);border-radius:6px;padding:3px 6px;cursor:pointer;color:${isHidden?'var(--amber)':'var(--muted)'};transition:all 0.1s;" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='${isHidden?'var(--amber)':'var(--muted)'}'">
             ${isHidden
@@ -1640,6 +1652,29 @@ function importProjectData(event){const file=event.target.files[0];if(!file)retu
 const dist=(a,b)=>Math.sqrt((b.x-a.x)**2+(b.y-a.y)**2);
 const calculateLength=(pts,closed)=>{if(pts.length<2||!state.pixelsPerMeter)return 0;let l=0;for(let i=1;i<pts.length;i++)l+=dist(pts[i-1],pts[i]);if(closed&&pts.length>2)l+=dist(pts[pts.length-1],pts[0]);return l/state.pixelsPerMeter;};
 const calculateArea=pts=>{if(pts.length<3||!state.pixelsPerMeter)return 0;let a=0;for(let i=0;i<pts.length;i++){let j=(i+1)%pts.length;a+=pts[i].x*pts[j].y-pts[j].x*pts[i].y;}return Math.abs(a)/2/state.pixelsPerMeter**2;};
+
+// Calcule les composantes de volume d'un outil TERRASSEMENT
+// Retourne {fond, recul, talus, total} en m³
+function terrassementVolumes(tool){
+    const Z = tool.terrZ || 1;
+    const recul = tool.terrRecul || 0;
+    const ratio = tool.terrRatio || 0; // talus 1/n → recul horizontal = n × Z
+    let fond=0, vRecul=0, vTalus=0;
+    tool.measurements.forEach(pts=>{
+        const A = calculateArea(pts);
+        const P = calculateLength(pts, true); // périmètre fermé
+        fond += A * Z;
+        if(recul>0){
+            const aRecul = P*recul + recul*recul; // approximation coins
+            vRecul += aRecul * Z;
+        }
+        if(ratio>0){
+            const reculTalus = ratio * Z;
+            vTalus += P * 0.5 * reculTalus * Z;
+        }
+    });
+    return { fond, recul:vRecul, talus:vTalus, total: fond+vRecul+vTalus };
+}
 const distToSeg=(p,v,w)=>{const l2=(w.x-v.x)**2+(w.y-v.y)**2;if(!l2)return dist(p,v);let t=Math.max(0,Math.min(1,((p.x-v.x)*(w.x-v.x)+(p.y-v.y)*(w.y-v.y))/l2));return dist(p,{x:v.x+t*(w.x-v.x),y:v.y+t*(w.y-v.y)});};
 
 // IMPRESSION — groupée par indice
@@ -1650,6 +1685,51 @@ async function generatePrintImage(){
     } else {
         await generatePrintImageForTools(state.tools, 'MAPULATOR');
     }
+}
+
+// Affiche les sous-lignes détaillées d'un terrassement dans le PDF.
+// Retourne le nouveau y. cols = {pad, colType, colNet, colMaj, W, RH}
+function renderTerrassementRows(doc, t, y, cols){
+    const {pad, colType, colNet, colMaj, RH} = cols;
+    const v = terrassementVolumes(t);
+    const isR = t.terrType==='remblais';
+    const sign = isR ? '+' : '-';
+    const baseLabel = isR ? 'Remblais' : 'Déblais';
+
+    const sub = [];
+    // Ligne principale : fond
+    sub.push({ label: baseLabel, type: `H ${t.terrZ||1}m`, val: sign+v.fond.toFixed(2)+' m³', bold:true, indent:8 });
+    if(v.recul>0) sub.push({ label: baseLabel+' recul', type:`recul ${t.terrRecul}m`, val: sign+v.recul.toFixed(2)+' m³', indent:14 });
+    if(v.talus>0) sub.push({ label: baseLabel+' talus', type:`talus 1/${t.terrRatio}`, val: sign+v.talus.toFixed(2)+' m³', indent:14 });
+    // Total déblais/remblais : fond + recul + talus
+    const totalDeblai = v.fond + v.recul + v.talus;
+    sub.push({ label:`Total ${baseLabel.toLowerCase()}`, type:'', val: sign+totalDeblai.toFixed(2)+' m³', indent:8, total:true });
+    // Remblais périphérique : seulement pour les déblais, somme positive recul+talus
+    if(!isR && (v.recul>0 || v.talus>0)){
+        sub.push({ label:'Remblais périphérique', type:'recul + talus', val:'+'+(v.recul+v.talus).toFixed(2)+' m³', indent:14, peri:true });
+    }
+
+    sub.forEach((row, i)=>{
+        if(y>275){ doc.addPage(); y=20; }
+        if(i===0){
+            drawToolIconPdf(doc, t, pad, y-4.5, 6);
+            doc.setTextColor(30,30,30); doc.setFont('helvetica','bold'); doc.setFontSize(8);
+            doc.text(t.name, pad+8, y);
+            y+=RH;
+            // Sous-lignes sous le nom
+        }
+        doc.setFont('helvetica', (row.bold||row.total)?'bold':'normal'); doc.setFontSize(7.5);
+        doc.setTextColor(row.peri?34:(row.total?30:90), row.peri?120:(row.total?30:90), row.peri?60:(row.total?30:90));
+        doc.text((row.indent>10?'└ ':'')+row.label, pad+row.indent, y);
+        doc.setTextColor(150,150,150); doc.setFontSize(6.5);
+        doc.text(row.type, colType, y, {align:'right'});
+        doc.setTextColor(row.peri?34:(row.total?20:50), row.peri?120:(row.total?20:50), row.peri?60:(row.total?20:50)); doc.setFontSize(row.total?8:7.5);
+        doc.text(row.val, colNet, y, {align:'right'});
+        doc.setTextColor(150,150,150);
+        doc.text('—', colMaj, y, {align:'right'});
+        y+=RH-0.5;
+    });
+    return y+1;
 }
 
 async function generatePrintByFolders(){
@@ -1735,35 +1815,31 @@ async function generatePrintByFolders(){
 
             tools.forEach((t,i) => {
                 if (y > 275) { doc.addPage(); y = 20; drawColHeaders(y); y += 7; }
+
+                // Terrassement : sous-lignes détaillées
+                if(t.type==='TERRASSEMENT'){
+                    if(i%2===0){doc.setFillColor(250,250,250);doc.rect(pad,y-4,W-pad*2,RH,'F');}
+                    y = renderTerrassementRows(doc, t, y, {pad, colType, colNet, colMaj, W, RH});
+                    return;
+                }
+
                 let net=0;
                 if(t.type==='VRD') net=t.measurements.reduce((a,p)=>a+calculateLength(p,false),0);
                 else if(t.type==='TRANCHEE'){const l=t.measurements.reduce((a,p)=>a+calculateLength(p,false),0);net=l*(t.trancheeW||0.8)*(t.trancheeD||1.2);}
                 else if(t.type==='AREA') net=t.measurements.reduce((a,p)=>a+calculateArea(p),0);
-                else if(t.type==='TERRASSEMENT'){const a=t.measurements.reduce((s,p)=>s+calculateArea(p),0);net=a*(t.terrZ||1);}
                 else net=t.measurements.length;
-                // Label dynamique déblais/remblais
-                const tLabel = t.type==='TERRASSEMENT'
-                    ? (t.terrType==='remblais'?'Remblais':'Déblais')
-                    : (TYPE_LABEL[t.type]||'');
                 const unit=TYPE_UNIT[t.type]||'';
                 const maj = t.type==='POINT' ? null : net*1.1;
                 if(i%2===0){doc.setFillColor(250,250,250);doc.rect(pad,y-4,W-pad*2,RH,'F');}
-                // Icône outil
                 drawToolIconPdf(doc, t, pad, y-4.5, 6);
                 doc.setTextColor(30,30,30); doc.setFont('helvetica','normal'); doc.setFontSize(8);
                 doc.text(t.name, pad+8, y);
                 doc.setTextColor(130,130,130); doc.setFontSize(7);
-                doc.text(tLabel, colType, y, {align:'right'});
-                const netDisplay = t.type==='TERRASSEMENT'
-                    ? (t.terrType==='remblais'?'+':'-') + net.toFixed(2) + ' ' + unit
-                    : net.toFixed(2) + ' ' + unit;
-                const majDisplay = maj!==null
-                    ? (t.type==='TERRASSEMENT'?(t.terrType==='remblais'?'+':'-'):'') + (maj!==null?maj.toFixed(2):'') + ' ' + unit
-                    : '—';
+                doc.text(TYPE_LABEL[t.type]||'', colType, y, {align:'right'});
                 doc.setTextColor(50,50,50); doc.setFontSize(8);
-                doc.text(netDisplay, colNet, y, {align:'right'});
+                doc.text(net.toFixed(2)+' '+unit, colNet, y, {align:'right'});
                 doc.setTextColor(180,82,9); doc.setFont('helvetica','bold');
-                doc.text(majDisplay, colMaj, y, {align:'right'});
+                doc.text(maj!==null ? maj.toFixed(2)+' '+unit : '—', colMaj, y, {align:'right'});
                 y += RH;
             });
             y += GH;
@@ -1850,13 +1926,21 @@ async function generatePrintImageForTools(tools, title){
         groups[key].forEach((t,i)=>{
             if(y>275){ doc.addPage(); y=20; }
 
+            // Terrassement : sous-lignes détaillées
+            if(t.type==='TERRASSEMENT'){
+                if(i%2===0){ doc.setFillColor(250,250,250); doc.rect(pad,y-4,W-pad*2,RH,'F'); }
+                y = renderTerrassementRows(doc, t, y, {pad, colType, colNet, colMaj, W, RH});
+                return;
+            }
+
             let net=0;
             if(t.type==='VRD')      net=t.measurements.reduce((a,p)=>a+calculateLength(p,false),0);
             else if(t.type==='TRANCHEE'){ const l=t.measurements.reduce((a,p)=>a+calculateLength(p,false),0); net=l*(t.trancheeW||0.8)*(t.trancheeD||1.2); }
             else if(t.type==='AREA') net=t.measurements.reduce((a,p)=>a+calculateArea(p),0);
             else                     net=t.measurements.length;
             const unit=TYPE_UNIT[t.type]||'';
-            const maj = t.type==='POINT' ? null : net*1.1;
+            const maj = (t.type==='POINT') ? null : net*1.1;
+            const sign = '';
 
             // Fond zébré
             if(i%2===0){ doc.setFillColor(250,250,250); doc.rect(pad,y-4,W-pad*2,RH,'F'); }

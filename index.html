@@ -2128,53 +2128,36 @@ toggleTab('SETUP');
     const appleEl=document.getElementById('appleIcon');
     if(appleEl) appleEl.href=icon192;
 
-    // 2. Manifest en data-URI
+    // 2. Manifest en data-URI — start_url/scope en ABSOLU vers la vraie page.
+    //    (Un manifest blob: est rejeté par Chrome ; un data: avec URLs absolues passe.)
+    const pageURL = location.href.split('#')[0].split('?')[0];
     const manifest={
         name:'Mapulator — Métré VRD',
         short_name:'Mapulator',
         description:'Outil de métré VRD sur plans',
-        start_url:'.',
-        scope:'.',
+        id:pageURL,
+        start_url:pageURL,
+        scope:pageURL.substring(0, pageURL.lastIndexOf('/')+1),
         display:'standalone',
         orientation:'any',
         background_color:'#000000',
         theme_color:'#f59e0b',
         icons:[
-            {src:icon192,sizes:'192x192',type:'image/png',purpose:'any maskable'},
-            {src:icon512,sizes:'512x512',type:'image/png',purpose:'any maskable'}
+            {src:icon192,sizes:'192x192',type:'image/png',purpose:'any'},
+            {src:icon512,sizes:'512x512',type:'image/png',purpose:'any'},
+            {src:icon192,sizes:'192x192',type:'image/png',purpose:'maskable'},
+            {src:icon512,sizes:'512x512',type:'image/png',purpose:'maskable'}
         ]
     };
-    const manifestBlob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
-    const manifestURL=URL.createObjectURL(manifestBlob);
+    const manifestURL='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(manifest));
     const linkEl=document.createElement('link');
     linkEl.rel='manifest'; linkEl.href=manifestURL;
     document.head.appendChild(linkEl);
 
-    // 3. Service Worker (cache de la page pour le hors-ligne)
-    if('serviceWorker' in navigator){
-        const swCode=`
-            const CACHE='mapulator-v1';
-            self.addEventListener('install',e=>{self.skipWaiting();});
-            self.addEventListener('activate',e=>{e.waitUntil(self.clients.claim());});
-            self.addEventListener('fetch',e=>{
-                if(e.request.method!=='GET')return;
-                e.respondWith(
-                    caches.open(CACHE).then(cache=>
-                        cache.match(e.request).then(hit=>{
-                            const net=fetch(e.request).then(resp=>{
-                                if(resp&&resp.status===200&&resp.type==='basic'){cache.put(e.request,resp.clone());}
-                                return resp;
-                            }).catch(()=>hit);
-                            return hit||net;
-                        })
-                    )
-                );
-            });
-        `;
-        const swBlob=new Blob([swCode],{type:'text/javascript'});
-        const swURL=URL.createObjectURL(swBlob);
-        navigator.serviceWorker.register(swURL).catch(()=>{/* silencieux si bloqué (iframe) */});
-    }
+    // 3. Service Worker hors-ligne — seulement si la page a un vrai fichier .js servable.
+    //    Impossible en HTML unique (pas de fichier sw.js séparé), et un SW blob: est refusé.
+    //    Chrome moderne n'exige PLUS de SW pour l'installation, donc on s'en passe.
+    //    (Le cache navigateur + "Ajouter à l'écran d'accueil" suffisent.)
 
     // 4. Capture l'évènement d'installation → le bouton vit dans SETUP
     window.addEventListener('beforeinstallprompt',e=>{
@@ -2191,14 +2174,32 @@ toggleTab('SETUP');
 // Déclenche l'installation native (appelé par le bouton de SETUP)
 async function triggerInstall(){
     const dp=window._pwaDeferredPrompt;
-    if(!dp){
-        alert("Pour installer :\n\n• Sur ordinateur (Chrome/Edge) : icône d'installation ⊕ dans la barre d'adresse.\n• Sur Android : menu ⋮ → « Ajouter à l'écran d'accueil ».\n• Sur iPhone (Safari) : Partager → « Sur l'écran d'accueil ».\n\nL'installation nécessite que la page soit ouverte en ligne (https), pas en fichier local.");
+    if(dp){
+        dp.prompt();
+        await dp.userChoice;
+        window._pwaDeferredPrompt=null;
+        renderDOM();
         return;
     }
-    dp.prompt();
-    await dp.userChoice;
-    window._pwaDeferredPrompt=null;
-    renderDOM();
+    // Pas de prompt dispo → diagnostic ciblé
+    const ua=navigator.userAgent;
+    const isHttps=location.protocol==='https:';
+    const inIframe=window.self!==window.top;
+    const isIOS=/iPad|iPhone|iPod/.test(ua);
+    const isFirefox=/firefox/i.test(ua);
+    let msg;
+    if(inIframe){
+        msg="La page est affichée dans un cadre intégré (aperçu). Ouvre-la dans un vrai onglet du navigateur pour pouvoir l'installer.";
+    } else if(!isHttps){
+        msg="L'installation exige une page en https. Ouvre la version GitHub Pages (https://…), pas un fichier local.";
+    } else if(isIOS){
+        msg="Sur iPhone/iPad (Safari) :\n\n1. Touche le bouton Partager (carré + flèche)\n2. « Sur l'écran d'accueil »\n3. Ajouter";
+    } else if(isFirefox){
+        msg="Firefox ne gère pas l'installation PWA sur ordinateur. Utilise Chrome ou Edge, ou sur Android : menu ⋮ → « Installer ».";
+    } else {
+        msg="Si le bouton reste inactif :\n\n• Chrome/Edge ordinateur : clique l'icône d'installation (écran avec ↓) tout à droite de la barre d'adresse.\n• Android : menu ⋮ → « Installer l'application ».\n\nSi rien n'apparaît, recharge la page une fois (le navigateur vérifie le manifeste au chargement).";
+    }
+    alert(msg);
 }
 </script>
 </body>

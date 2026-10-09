@@ -372,6 +372,8 @@ let state = {
     isLoading: false, pixelsPerMeter: null,
     tools: [], activeToolId: null,
     pendingDeleteTool: null,
+    currentFileName: null,
+    autoBackup: { on:false, min:5 },
     folders: [],
     folderOpen: {},
     isCreatingFolder: false,
@@ -1097,17 +1099,57 @@ function buildSetup(){
         </label>
     </div>
     ${superBtn}
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:13px;">
-        <div style="font-size:0.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:9px;">Projet</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <button onclick="exportProjectData()" style="display:flex;align-items:center;justify-content:center;gap:5px;background:var(--amber-dk);color:#000;padding:8px;border-radius:10px;border:none;cursor:pointer;font-weight:700;font-size:0.73rem;font-family:inherit;" onmouseover="this.style.background='var(--amber)'" onmouseout="this.style.background='var(--amber-dk)'">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Sauver .map
-            </button>
-            <label style="display:flex;align-items:center;justify-content:center;gap:5px;background:#18181b;color:var(--muted);padding:8px;border-radius:10px;border:1px solid var(--border2);cursor:pointer;font-weight:700;font-size:0.73rem;font-family:inherit;" onmouseover="this.style.background='var(--border2)';this.style.color='var(--white)'" onmouseout="this.style.background='#18181b';this.style.color='var(--muted)'">📤 Charger<input type="file" accept=".map,.json,application/json" style="display:none;" onchange="importProjectData(event)"/></label>
-        </div>
-    </div>
+    ${buildProjectBlock()}
     ${buildInstallBlock()}`;
+}
+
+function buildProjectBlock(){
+    const hasFS = 'showSaveFilePicker' in window;
+    const curName = state.currentFileName || null;
+    const ab = state.autoBackup || { on:false, min:5 };
+    // Libellé du fichier courant
+    const fileLabel = curName
+        ? `<div style="font-size:0.62rem;color:var(--amber);margin-bottom:9px;display:flex;align-items:center;gap:5px;overflow:hidden;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="flex-shrink:0;"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${curName}</span></div>`
+        : `<div style="font-size:0.6rem;color:var(--border2);margin-bottom:9px;">Aucun fichier ouvert</div>`;
+
+    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:13px;">
+        <div style="font-size:0.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:9px;">Projet</div>
+        ${fileLabel}
+        <div style="display:flex;flex-direction:column;gap:7px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">
+                <button onclick="projectOpen()" style="display:flex;align-items:center;justify-content:center;gap:5px;background:#18181b;color:var(--muted);padding:9px;border-radius:9px;border:1px solid var(--border2);cursor:pointer;font-weight:700;font-size:0.72rem;font-family:inherit;" onmouseover="this.style.background='var(--border2)';this.style.color='#fff'" onmouseout="this.style.background='#18181b';this.style.color='var(--muted)'">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    Ouvrir
+                </button>
+                <button onclick="projectSave()" style="display:flex;align-items:center;justify-content:center;gap:5px;background:var(--amber-dk);color:#000;padding:9px;border-radius:9px;border:none;cursor:pointer;font-weight:700;font-size:0.72rem;font-family:inherit;" onmouseover="this.style.background='var(--amber)'" onmouseout="this.style.background='var(--amber-dk)'">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    Enregistrer
+                </button>
+            </div>
+            <button onclick="projectSaveAs()" style="display:flex;align-items:center;justify-content:center;gap:5px;background:#18181b;color:var(--muted);padding:9px;border-radius:9px;border:1px solid var(--border2);cursor:pointer;font-weight:700;font-size:0.72rem;font-family:inherit;" onmouseover="this.style.background='var(--border2)';this.style.color='#fff'" onmouseout="this.style.background='#18181b';this.style.color='var(--muted)'">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                Enregistrer sous…
+            </button>
+        </div>
+
+        <!-- BACKUP AUTO -->
+        <div style="margin-top:11px;padding-top:11px;border-top:1px solid var(--border);">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                <div style="display:flex;align-items:center;gap:7px;">
+                    <button onclick="toggleAutoBackup()" title="Activer/désactiver" style="width:34px;height:19px;border-radius:10px;border:none;cursor:pointer;position:relative;background:${ab.on?'var(--amber-dk)':'#333'};transition:background 0.15s;flex-shrink:0;">
+                        <span style="position:absolute;top:2px;left:${ab.on?'17px':'2px'};width:15px;height:15px;border-radius:50%;background:#fff;transition:left 0.15s;"></span>
+                    </button>
+                    <span style="font-size:0.68rem;font-weight:700;color:${ab.on?'var(--amber)':'var(--muted)'};">Backup auto</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:4px;">
+                    <input type="number" min="1" max="120" value="${ab.min}" ${ab.on?'':'disabled'} style="width:44px;height:24px;" class="d-input" onkeydown="event.stopPropagation()" onchange="setAutoBackupMin(this.value)"/>
+                    <span style="font-size:0.62rem;color:var(--muted);">min</span>
+                </div>
+            </div>
+            ${ab.on && !hasFS ? `<p style="font-size:0.56rem;color:#f87171;margin-top:7px;line-height:1.4;">⚠ Navigateur sans accès fichier : le backup téléchargera un fichier à chaque fois. Utilise Chrome/Edge pour un backup silencieux dans le fichier.</p>` : ''}
+            ${ab.on && hasFS && !curName ? `<p style="font-size:0.56rem;color:var(--muted);margin-top:7px;line-height:1.4;">Enregistre d'abord une fois pour choisir le fichier de backup.</p>` : ''}
+        </div>
+    </div>`;
 }
 
 function buildInstallBlock(){
@@ -1690,6 +1732,164 @@ function importProjectData(event){const file=event.target.files[0];if(!file)retu
     });
 }catch{alert("Fichier invalide.");setState({isLoading:false});}};reader.readAsText(file);}
 
+// ═══════════════════════════════════════════════════════════
+//  SYSTÈME DE FICHIERS : Ouvrir / Enregistrer / Enregistrer sous / Backup auto
+// ═══════════════════════════════════════════════════════════
+let _fileHandle = null;          // FileSystemFileHandle courant (non sérialisable → hors state)
+let _autoBackupTimer = null;
+
+// Sérialise l'état projet courant → string JSON
+function buildProjectJSON(){
+    const d={version:"3.0",plans:state.plans.map(p=>({src:p.src,isPdf:p.isPdf,opacity:p.opacity,w:p.w,h:p.h,name:p.name||'',scaleRatio:p.scaleRatio||'50',rotation:p.rotation||0,offsetX:p.offsetX||0,offsetY:p.offsetY||0})),imageSize:state.imageSize,scaleRatioInput:state.scaleRatioInput,pixelsPerMeter:state.pixelsPerMeter,tools:state.tools,folders:state.folders||[],appState:state.appState};
+    return JSON.stringify(d);
+}
+
+// Charge des données projet (objet déjà parsé) dans l'app
+function applyProjectData(d, fileName){
+    if(d.imageBase64&&!d.plans) d.plans=[{src:d.imageBase64,isPdf:d.isPdf||false,opacity:1,w:0,h:0}];
+    const plans=d.plans||[];
+    if(!plans.length){setState({isLoading:false});return alert("Aucun plan.");}
+    let loaded=0;
+    plans.forEach((plan,i)=>{
+        const img=new Image();
+        img.onload=()=>{
+            plan.w=plan.w||img.width;plan.h=plan.h||img.height;plan.id=Date.now().toString()+i;
+            if(++loaded===plans.length){
+                setState({plans,imageSize:d.imageSize||{w:plans[0].w,h:plans[0].h},scaleRatioInput:d.scaleRatioInput,pixelsPerMeter:d.pixelsPerMeter,tools:d.tools||[],folders:d.folders||[],appState:d.appState||'MEASURE',isLoading:false,transform:{scale:1,x:0,y:0},currentFileName:fileName||state.currentFileName});
+                toggleTab('ITEM');
+            }
+        };
+        img.onerror=()=>{alert("Erreur image plan "+(i+1));setState({isLoading:false});};
+        img.src=plan.src;
+    });
+}
+
+// Nom de fichier par défaut à partir du 1er plan
+function defaultFileName(){
+    const base=(state.plans[0]&&state.plans[0].name?state.plans[0].name:'mapulator_projet').replace(/[^a-z0-9_\-]/gi,'_');
+    return base+'.map';
+}
+
+// ─── OUVRIR ───
+async function projectOpen(){
+    if('showOpenFilePicker' in window){
+        try{
+            const [handle]=await window.showOpenFilePicker({
+                types:[{description:'Projet Mapulator',accept:{'application/octet-stream':['.map'],'application/json':['.json']}}]
+            });
+            const file=await handle.getFile();
+            const text=await file.text();
+            _fileHandle=handle;
+            setState({isLoading:true});
+            applyProjectData(JSON.parse(text), file.name);
+        }catch(e){ if(e.name!=='AbortError') alert("Ouverture impossible : "+e.message); }
+    } else {
+        // Repli : input file classique
+        const inp=document.createElement('input');
+        inp.type='file'; inp.accept='.map,.json,application/json';
+        inp.onchange=e=>{
+            const file=e.target.files[0]; if(!file)return;
+            _fileHandle=null;
+            const r=new FileReader();
+            r.onload=ev=>{ try{ setState({isLoading:true}); applyProjectData(JSON.parse(ev.target.result), file.name); }catch{ alert("Fichier invalide."); } };
+            r.readAsText(file);
+        };
+        inp.click();
+    }
+}
+
+// ─── ENREGISTRER (réécrit le fichier courant, sinon bascule sur "sous") ───
+async function projectSave(){
+    if(!state.plans.length) return alert("Aucun projet à enregistrer.");
+    if(_fileHandle){
+        try{
+            const w=await _fileHandle.createWritable();
+            await w.write(buildProjectJSON());
+            await w.close();
+            flashSaved();
+            return;
+        }catch(e){ alert("Enregistrement impossible : "+e.message); return; }
+    }
+    // Pas de fichier courant → Enregistrer sous
+    projectSaveAs();
+}
+
+// ─── ENREGISTRER SOUS ───
+async function projectSaveAs(){
+    if(!state.plans.length) return alert("Aucun projet à enregistrer.");
+    if('showSaveFilePicker' in window){
+        try{
+            const handle=await window.showSaveFilePicker({
+                suggestedName:defaultFileName(),
+                types:[{description:'Projet Mapulator',accept:{'application/octet-stream':['.map']}}]
+            });
+            const w=await handle.createWritable();
+            await w.write(buildProjectJSON());
+            await w.close();
+            _fileHandle=handle;
+            setState({currentFileName:handle.name});
+            flashSaved();
+        }catch(e){ if(e.name!=='AbortError') alert("Enregistrement impossible : "+e.message); }
+    } else {
+        // Repli : téléchargement
+        const a=document.createElement('a');
+        a.href="data:application/octet-stream;charset=utf-8,"+encodeURIComponent(buildProjectJSON());
+        a.download=defaultFileName();
+        a.click();
+        setState({currentFileName:defaultFileName()});
+    }
+}
+
+// Confirmation visuelle discrète
+function flashSaved(){
+    let el=document.getElementById('savedToast');
+    if(!el){
+        el=document.createElement('div'); el.id='savedToast';
+        el.style.cssText='position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:9999;background:#166534;color:#fff;padding:8px 18px;border-radius:20px;font-weight:700;font-size:0.75rem;font-family:inherit;box-shadow:0 4px 16px rgba(0,0,0,0.4);opacity:0;transition:opacity 0.2s;';
+        document.body.appendChild(el);
+    }
+    el.textContent='✓ Enregistré';
+    el.style.opacity='1';
+    clearTimeout(el._t); el._t=setTimeout(()=>{el.style.opacity='0';},1400);
+}
+
+// ─── BACKUP AUTO ───
+function toggleAutoBackup(){
+    const on=!state.autoBackup.on;
+    setState({autoBackup:{...state.autoBackup,on}});
+    scheduleAutoBackup();
+}
+function setAutoBackupMin(v){
+    const min=Math.max(1,Math.min(120,parseInt(v)||5));
+    setState({autoBackup:{...state.autoBackup,min}});
+    scheduleAutoBackup();
+}
+function scheduleAutoBackup(){
+    if(_autoBackupTimer){ clearInterval(_autoBackupTimer); _autoBackupTimer=null; }
+    if(!state.autoBackup.on) return;
+    const ms=state.autoBackup.min*60*1000;
+    _autoBackupTimer=setInterval(async ()=>{
+        if(!state.plans.length) return;
+        if(_fileHandle){
+            // Backup silencieux dans le fichier courant
+            try{
+                const w=await _fileHandle.createWritable();
+                await w.write(buildProjectJSON());
+                await w.close();
+                flashSaved();
+            }catch(e){/* ignore */}
+        } else if(!('showSaveFilePicker' in window)){
+            // Sans FS API : téléchargement horodaté
+            const a=document.createElement('a');
+            a.href="data:application/octet-stream;charset=utf-8,"+encodeURIComponent(buildProjectJSON());
+            const ts=new Date().toISOString().slice(0,16).replace(/[:T]/g,'-');
+            a.download=defaultFileName().replace('.map','')+'_backup_'+ts+'.map';
+            a.click();
+        }
+        // Si FS API dispo mais pas encore de fichier : on attend un 1er "Enregistrer sous"
+    }, ms);
+}
+
 // MATHS
 const dist=(a,b)=>Math.sqrt((b.x-a.x)**2+(b.y-a.y)**2);
 const calculateLength=(pts,closed)=>{if(pts.length<2||!state.pixelsPerMeter)return 0;let l=0;for(let i=1;i<pts.length;i++)l+=dist(pts[i-1],pts[i]);if(closed&&pts.length>2)l+=dist(pts[pts.length-1],pts[0]);return l/state.pixelsPerMeter;};
@@ -2126,8 +2326,13 @@ toggleTab('SETUP');
         return c.toDataURL('image/png');
     }
     const icon192=makeIcon(192), icon512=makeIcon(512);
+    const icon64=makeIcon(64);
     const appleEl=document.getElementById('appleIcon');
     if(appleEl) appleEl.href=icon192;
+    // Favicon = picto de l'app (remplace l'emoji par défaut)
+    let favEl=document.querySelector('link[rel="icon"]');
+    if(!favEl){ favEl=document.createElement('link'); favEl.rel='icon'; document.head.appendChild(favEl); }
+    favEl.type='image/png'; favEl.href=icon64;
 
     // 2. Manifest en data-URI — start_url/scope en ABSOLU vers la vraie page.
     //    (Un manifest blob: est rejeté par Chrome ; un data: avec URLs absolues passe.)

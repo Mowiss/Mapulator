@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mapulator — Outil de Métré VRD</title>
+    <!-- PWA : installable -->
+    <meta name="theme-color" content="#f59e0b">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Mapulator">
+    <link rel="apple-touch-icon" id="appleIcon" href="">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;600;700&display=swap');
@@ -1094,10 +1101,36 @@ function buildSetup(){
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
             <button onclick="exportProjectData()" style="display:flex;align-items:center;justify-content:center;gap:5px;background:var(--amber-dk);color:#000;padding:8px;border-radius:10px;border:none;cursor:pointer;font-weight:700;font-size:0.73rem;font-family:inherit;" onmouseover="this.style.background='var(--amber)'" onmouseout="this.style.background='var(--amber-dk)'">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Sauver .json
+                Sauver .map
             </button>
-            <label style="display:flex;align-items:center;justify-content:center;gap:5px;background:#18181b;color:var(--muted);padding:8px;border-radius:10px;border:1px solid var(--border2);cursor:pointer;font-weight:700;font-size:0.73rem;font-family:inherit;" onmouseover="this.style.background='var(--border2)';this.style.color='var(--white)'" onmouseout="this.style.background='#18181b';this.style.color='var(--muted)'">📤 Charger<input type="file" accept=".json" style="display:none;" onchange="importProjectData(event)"/></label>
+            <label style="display:flex;align-items:center;justify-content:center;gap:5px;background:#18181b;color:var(--muted);padding:8px;border-radius:10px;border:1px solid var(--border2);cursor:pointer;font-weight:700;font-size:0.73rem;font-family:inherit;" onmouseover="this.style.background='var(--border2)';this.style.color='var(--white)'" onmouseout="this.style.background='#18181b';this.style.color='var(--muted)'">📤 Charger<input type="file" accept=".map,.json,application/json" style="display:none;" onchange="importProjectData(event)"/></label>
         </div>
+    </div>
+    ${buildInstallBlock()}`;
+}
+
+function buildInstallBlock(){
+    // Déjà installée / lancée en mode app → rien à afficher
+    const isStandalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches
+                         || window.navigator.standalone === true;
+    if(isStandalone){
+        return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:13px;margin-top:11px;">
+            <div style="font-size:0.65rem;font-weight:700;color:#4ade80;text-transform:uppercase;letter-spacing:0.08em;display:flex;align-items:center;gap:6px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Application installée
+            </div>
+        </div>`;
+    }
+    const canInstall = !!window._pwaDeferredPrompt;
+    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:13px;margin-top:11px;">
+        <div style="font-size:0.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:9px;">Application</div>
+        <button onclick="triggerInstall()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:${canInstall?'var(--amber-dk)':'#18181b'};color:${canInstall?'#000':'var(--muted)'};padding:9px;border-radius:10px;border:${canInstall?'none':'1px solid var(--border2)'};cursor:pointer;font-weight:700;font-size:0.73rem;font-family:inherit;" ${canInstall?`onmouseover="this.style.background='var(--amber)'" onmouseout="this.style.background='var(--amber-dk)'"`:''}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Installer Mapulator
+        </button>
+        <p style="font-size:0.6rem;color:var(--border2);margin-top:7px;line-height:1.5;">${canInstall
+            ? "Installe l'app sur cet appareil (fonctionne hors-ligne)."
+            : "Sur mobile : menu du navigateur → « Ajouter à l'écran d'accueil ». Nécessite une page en ligne (https)."}</p>
     </div>`;
 }
 
@@ -1634,7 +1667,7 @@ function setPlanOpacity(i, val){
     if(imgs[i]) imgs[i].style.opacity=val;
 }
 function applyScaleRatio(){const el=document.getElementById('scaleInput');if(el)state.scaleRatioInput=el.value;const s=parseFloat(state.scaleRatioInput);if(isNaN(s)||s<=0)return alert("Échelle invalide.");setState({pixelsPerMeter:(1000*72*2.5)/(25.4*s),appState:'MEASURE'});toggleTab('ITEM');}
-function exportProjectData(){if(!state.plans.length)return alert("Aucun projet.");setState({isLoading:true});setTimeout(()=>{const d={version:"3.0",plans:state.plans.map(p=>({src:p.src,isPdf:p.isPdf,opacity:p.opacity,w:p.w,h:p.h,name:p.name||'',scaleRatio:p.scaleRatio||'50',rotation:p.rotation||0,offsetX:p.offsetX||0,offsetY:p.offsetY||0})),imageSize:state.imageSize,scaleRatioInput:state.scaleRatioInput,pixelsPerMeter:state.pixelsPerMeter,tools:state.tools,folders:state.folders||[],appState:state.appState};const a=document.createElement('a');a.href="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(d));a.download="mapulator_projet.json";a.click();setState({isLoading:false});},100);}
+function exportProjectData(){if(!state.plans.length)return alert("Aucun projet.");setState({isLoading:true});setTimeout(()=>{const d={version:"3.0",plans:state.plans.map(p=>({src:p.src,isPdf:p.isPdf,opacity:p.opacity,w:p.w,h:p.h,name:p.name||'',scaleRatio:p.scaleRatio||'50',rotation:p.rotation||0,offsetX:p.offsetX||0,offsetY:p.offsetY||0})),imageSize:state.imageSize,scaleRatioInput:state.scaleRatioInput,pixelsPerMeter:state.pixelsPerMeter,tools:state.tools,folders:state.folders||[],appState:state.appState};const a=document.createElement('a');a.href="data:application/octet-stream;charset=utf-8,"+encodeURIComponent(JSON.stringify(d));const safe=(state.plans[0]&&state.plans[0].name?state.plans[0].name:'mapulator_projet').replace(/[^a-z0-9_\-]/gi,'_');a.download=safe+".map";a.click();setState({isLoading:false});},100);}
 
 function importProjectData(event){const file=event.target.files[0];if(!file)return;setState({isLoading:true});const reader=new FileReader();reader.onload=e=>{try{const d=JSON.parse(e.target.result);
     // Support ancien format v1/v2
@@ -2056,6 +2089,117 @@ window.addEventListener('keydown',e=>{
 
 renderDOM();
 toggleTab('SETUP');
+
+// ─────────────────────────────────────────────
+//  PWA : rend l'application installable + hors-ligne
+// ─────────────────────────────────────────────
+(function initPWA(){
+    // 1. Génère les icônes PNG (192 & 512) depuis un canvas
+    function makeIcon(size){
+        const c=document.createElement('canvas'); c.width=c.height=size;
+        const g=c.getContext('2d');
+        // Fond dégradé ambré arrondi
+        const r=size*0.22;
+        g.fillStyle='#0a0a0a'; g.fillRect(0,0,size,size);
+        g.beginPath();
+        g.moveTo(r,0); g.arcTo(size,0,size,size,r); g.arcTo(size,size,0,size,r);
+        g.arcTo(0,size,0,0,r); g.arcTo(0,0,size,0,r); g.closePath();
+        const grad=g.createLinearGradient(0,0,size,size);
+        grad.addColorStop(0,'#f59e0b'); grad.addColorStop(1,'#d97706');
+        g.fillStyle=grad; g.fill();
+        // Zigzag de métré (blanc)
+        g.strokeStyle='#fff'; g.lineWidth=size*0.055; g.lineCap='round'; g.lineJoin='round';
+        const y=size*0.5, a=size*0.12;
+        g.beginPath();
+        g.moveTo(size*0.18, y+a);
+        g.lineTo(size*0.37, y-a);
+        g.lineTo(size*0.5,  y+a);
+        g.lineTo(size*0.63, y-a);
+        g.lineTo(size*0.82, y+a);
+        g.stroke();
+        // Points de mesure
+        g.fillStyle='#fff';
+        [[0.18,y+a],[0.5,y+a],[0.82,y+a]].forEach(([px,py])=>{
+            g.beginPath(); g.arc(size*px,py,size*0.035,0,2*Math.PI); g.fill();
+        });
+        return c.toDataURL('image/png');
+    }
+    const icon192=makeIcon(192), icon512=makeIcon(512);
+    const appleEl=document.getElementById('appleIcon');
+    if(appleEl) appleEl.href=icon192;
+
+    // 2. Manifest en data-URI
+    const manifest={
+        name:'Mapulator — Métré VRD',
+        short_name:'Mapulator',
+        description:'Outil de métré VRD sur plans',
+        start_url:'.',
+        scope:'.',
+        display:'standalone',
+        orientation:'any',
+        background_color:'#000000',
+        theme_color:'#f59e0b',
+        icons:[
+            {src:icon192,sizes:'192x192',type:'image/png',purpose:'any maskable'},
+            {src:icon512,sizes:'512x512',type:'image/png',purpose:'any maskable'}
+        ]
+    };
+    const manifestBlob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
+    const manifestURL=URL.createObjectURL(manifestBlob);
+    const linkEl=document.createElement('link');
+    linkEl.rel='manifest'; linkEl.href=manifestURL;
+    document.head.appendChild(linkEl);
+
+    // 3. Service Worker (cache de la page pour le hors-ligne)
+    if('serviceWorker' in navigator){
+        const swCode=`
+            const CACHE='mapulator-v1';
+            self.addEventListener('install',e=>{self.skipWaiting();});
+            self.addEventListener('activate',e=>{e.waitUntil(self.clients.claim());});
+            self.addEventListener('fetch',e=>{
+                if(e.request.method!=='GET')return;
+                e.respondWith(
+                    caches.open(CACHE).then(cache=>
+                        cache.match(e.request).then(hit=>{
+                            const net=fetch(e.request).then(resp=>{
+                                if(resp&&resp.status===200&&resp.type==='basic'){cache.put(e.request,resp.clone());}
+                                return resp;
+                            }).catch(()=>hit);
+                            return hit||net;
+                        })
+                    )
+                );
+            });
+        `;
+        const swBlob=new Blob([swCode],{type:'text/javascript'});
+        const swURL=URL.createObjectURL(swBlob);
+        navigator.serviceWorker.register(swURL).catch(()=>{/* silencieux si bloqué (iframe) */});
+    }
+
+    // 4. Capture l'évènement d'installation → le bouton vit dans SETUP
+    window.addEventListener('beforeinstallprompt',e=>{
+        e.preventDefault();
+        window._pwaDeferredPrompt=e;
+        if(state.activeTab==='SETUP') renderDOM(); // réaffiche le bouton actif
+    });
+    window.addEventListener('appinstalled',()=>{
+        window._pwaDeferredPrompt=null;
+        if(state.activeTab==='SETUP') renderDOM();
+    });
+})();
+
+// Déclenche l'installation native (appelé par le bouton de SETUP)
+async function triggerInstall(){
+    const dp=window._pwaDeferredPrompt;
+    if(!dp){
+        alert("Pour installer :\n\n• Sur ordinateur (Chrome/Edge) : icône d'installation ⊕ dans la barre d'adresse.\n• Sur Android : menu ⋮ → « Ajouter à l'écran d'accueil ».\n• Sur iPhone (Safari) : Partager → « Sur l'écran d'accueil ».\n\nL'installation nécessite que la page soit ouverte en ligne (https), pas en fichier local.");
+        return;
+    }
+    dp.prompt();
+    await dp.userChoice;
+    window._pwaDeferredPrompt=null;
+    renderDOM();
+}
 </script>
 </body>
 </html>

@@ -2299,40 +2299,22 @@ toggleTab('SETUP');
     function makeIcon(size){
         const c=document.createElement('canvas'); c.width=c.height=size;
         const g=c.getContext('2d');
-        // Fond dégradé ambré arrondi
+        // Fond sombre arrondi (lisible comme icône d'app)
         const r=size*0.22;
-        g.fillStyle='#0a0a0a'; g.fillRect(0,0,size,size);
         g.beginPath();
         g.moveTo(r,0); g.arcTo(size,0,size,size,r); g.arcTo(size,size,0,size,r);
         g.arcTo(0,size,0,0,r); g.arcTo(0,0,size,0,r); g.closePath();
-        const grad=g.createLinearGradient(0,0,size,size);
-        grad.addColorStop(0,'#f59e0b'); grad.addColorStop(1,'#d97706');
-        g.fillStyle=grad; g.fill();
-        // Zigzag de métré (blanc)
-        g.strokeStyle='#fff'; g.lineWidth=size*0.055; g.lineCap='round'; g.lineJoin='round';
-        const y=size*0.5, a=size*0.12;
-        g.beginPath();
-        g.moveTo(size*0.18, y+a);
-        g.lineTo(size*0.37, y-a);
-        g.lineTo(size*0.5,  y+a);
-        g.lineTo(size*0.63, y-a);
-        g.lineTo(size*0.82, y+a);
-        g.stroke();
-        // Points de mesure
-        g.fillStyle='#fff';
-        [[0.18,y+a],[0.5,y+a],[0.82,y+a]].forEach(([px,py])=>{
-            g.beginPath(); g.arc(size*px,py,size*0.035,0,2*Math.PI); g.fill();
-        });
+        g.fillStyle='#0a0a0a'; g.fill();
+        // Emoji 🗺️ centré
+        g.font=Math.round(size*0.66)+'px "Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif';
+        g.textAlign='center'; g.textBaseline='middle';
+        g.fillText('🗺️', size/2, size*0.56);
         return c.toDataURL('image/png');
     }
     const icon192=makeIcon(192), icon512=makeIcon(512);
-    const icon64=makeIcon(64);
     const appleEl=document.getElementById('appleIcon');
     if(appleEl) appleEl.href=icon192;
-    // Favicon = picto de l'app (remplace l'emoji par défaut)
-    let favEl=document.querySelector('link[rel="icon"]');
-    if(!favEl){ favEl=document.createElement('link'); favEl.rel='icon'; document.head.appendChild(favEl); }
-    favEl.type='image/png'; favEl.href=icon64;
+    // Favicon : on GARDE l'emoji 🗺️ SVG défini dans le <head> (net à toutes tailles).
 
     // 2. Manifest en data-URI — start_url/scope en ABSOLU vers la vraie page.
     //    (Un manifest blob: est rejeté par Chrome ; un data: avec URLs absolues passe.)

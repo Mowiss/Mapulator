@@ -1166,7 +1166,10 @@ function buildInstallBlock(){
     }
     const canInstall = !!window._pwaDeferredPrompt;
     return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:13px;margin-top:11px;">
-        <div style="font-size:0.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:9px;">Application</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;">
+            <span style="font-size:0.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Application</span>
+            ${window._pwaIcon?`<img src="${window._pwaIcon}" title="Icône de l'app (version 2)" style="width:26px;height:26px;border-radius:6px;">`:''}
+        </div>
         <button onclick="triggerInstall()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:${canInstall?'var(--amber-dk)':'#18181b'};color:${canInstall?'#000':'var(--muted)'};padding:9px;border-radius:10px;border:${canInstall?'none':'1px solid var(--border2)'};cursor:pointer;font-weight:700;font-size:0.73rem;font-family:inherit;" ${canInstall?`onmouseover="this.style.background='var(--amber)'" onmouseout="this.style.background='var(--amber-dk)'"`:''}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Installer Mapulator
@@ -2312,6 +2315,8 @@ toggleTab('SETUP');
         return c.toDataURL('image/png');
     }
     const icon192=makeIcon(192), icon512=makeIcon(512);
+    window._pwaIcon=icon192;
+    if(state.activeTab==='SETUP') renderDOM();
     const appleEl=document.getElementById('appleIcon');
     if(appleEl) appleEl.href=icon192;
     // Favicon : on GARDE l'emoji 🗺️ SVG défini dans le <head> (net à toutes tailles).
@@ -2323,7 +2328,7 @@ toggleTab('SETUP');
         name:'Mapulator — Métré VRD',
         short_name:'Mapulator',
         description:'Outil de métré VRD sur plans',
-        id:pageURL,
+        id:'mapulator-carte-v2', // nouvel id → Chrome régénère l'icône (l'ancienne restait en cache)
         start_url:pageURL,
         scope:pageURL.substring(0, pageURL.lastIndexOf('/')+1),
         display:'standalone',
